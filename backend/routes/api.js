@@ -211,7 +211,7 @@ router.post('/event/stop', authenticateToken, async (req, res) => {
 router.post('/disqualify', authenticateToken, async (req, res) => {
   try {
     const team_id = req.user.team_id; 
-    const team = await Team.findOneAndUpdate({ team_id }, { disqualified: true }, { new: true });
+    const team = await Team.findOneAndUpdate({ team_id }, { disqualified: true }, { returnDocument: 'after' });
     
     triggerSync(req, 'leaderboard_update');
 
@@ -327,7 +327,7 @@ router.get('/admin/teams', authenticateToken, authorizeRoles('admin', 'judge'), 
 router.post('/admin/score', authenticateToken, authorizeRoles('admin', 'judge'), async (req, res) => {
   try {
     const { team_id, round2_score } = req.body;
-    const team = await Team.findOneAndUpdate({ team_id }, { round2_score: Number(round2_score) }, { new: true });
+    const team = await Team.findOneAndUpdate({ team_id }, { round2_score: Number(round2_score) }, { returnDocument: 'after' });
     
     triggerSync(req, 'leaderboard_update');
     res.json({ success: true, team });
