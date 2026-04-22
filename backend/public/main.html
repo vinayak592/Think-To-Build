@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech-Fusion | Innovation Hub</title>
+  <meta name="description" content="Tech-Fusion - Where technology meets creativity. Explore AI competitions, team dashboards, and innovation challenges.">
+  <link rel="stylesheet" href="main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Animated Background Canvas -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- Glowing Grid Overlay -->
+  <div class="grid-overlay"></div>
+
+  <!-- Floating Orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Main Content -->
+  <div class="main-wrapper">
+
+    <!-- Navigation Bar -->
+    <nav class="top-nav" id="top-nav">
+      <div class="nav-brand">
+        <span class="nav-logo-icon">⚡</span>
+        <span class="nav-logo-text">TECH<span class="accent">FUSION</span></span>
+      </div>
+      <div class="nav-links">
+        <a href="#about" class="nav-link">About</a>
+        <a href="#explore" class="nav-link">Explore</a>
+        <a href="/register" class="nav-link nav-cta">Register Now</a>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>LIVE EVENT 2026</span>
+        </div>
+        <h1 class="hero-title">
+          <span class="title-line line-1">
+            <span class="char-reveal">T</span><span class="char-reveal">E</span><span class="char-reveal">C</span><span class="char-reveal">H</span>
+          </span>
+          <span class="title-line line-2">
+            <span class="char-reveal gradient-text">F</span><span class="char-reveal gradient-text">U</span><span class="char-reveal gradient-text">S</span><span class="char-reveal gradient-text">I</span><span class="char-reveal gradient-text">O</span><span class="char-reveal gradient-text">N</span>
+          </span>
+        </h1>
+        <p class="hero-subtitle">Where <span class="type-effect" id="type-effect"></span></p>
+        <p class="hero-description">
+          Push your creative limits in our AI-powered competitions. 
+          Generate, compete, and innovate with cutting-edge technology.
+        </p>
+        <div class="hero-actions">
+          <a href="/register" class="btn btn-primary" id="btn-join">
+            <span class="btn-text">Join The Arena</span>
+            <span class="btn-icon">→</span>
+            <span class="btn-shine"></span>
+          </a>
+          <a href="#explore" class="btn btn-ghost" id="btn-explore">
+            <span class="btn-text">Explore Modules</span>
+          </a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-number" id="stat-teams">0</span>
+            <span class="stat-label">Teams</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-number" id="stat-challenges">0</span>
+            <span class="stat-label">Challenges</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-number" id="stat-prizes">0</span>
+            <span class="stat-label">Prizes</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Visual -->
+      <div class="hero-visual">
+        <div class="hologram-container">
+          <div class="hologram-ring ring-1"></div>
+          <div class="hologram-ring ring-2"></div>
+          <div class="hologram-ring ring-3"></div>
+          <div class="hologram-core">
+            <svg viewBox="0 0 100 100" class="hologram-svg">
+              <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" fill="none" stroke="url(#holo-gradient)" stroke-width="1.5"/>
+              <polygon points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" fill="none" stroke="url(#holo-gradient)" stroke-width="1" opacity="0.6"/>
+              <polygon points="50,25 75,37.5 75,62.5 50,75 25,62.5 25,37.5" fill="none" stroke="url(#holo-gradient)" stroke-width="0.8" opacity="0.4"/>
+              <circle cx="50" cy="50" r="8" fill="url(#holo-gradient)" opacity="0.8"/>
+              <defs>
+                <linearGradient id="holo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#60a5fa"/>
+                  <stop offset="50%" stop-color="#a78bfa"/>
+                  <stop offset="100%" stop-color="#f472b6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <!-- Data streams -->
+          <div class="data-stream stream-1"></div>
+          <div class="data-stream stream-2"></div>
+          <div class="data-stream stream-3"></div>
+          <div class="data-stream stream-4"></div>
+        </div>
+      </div>
+
+      <!-- Scroll Indicator -->
+      <div class="scroll-indicator">
+        <div class="scroll-line"></div>
+        <span>SCROLL</span>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="about">
+      <div class="section-header">
+        <span class="section-tag">// ABOUT</span>
+        <h2 class="section-title">What is <span class="gradient-text">Tech-Fusion</span>?</h2>
+        <p class="section-desc">A next-generation technical event platform where AI meets human creativity. Compete in real-time challenges, showcase your prompt engineering skills, and climb the leaderboard.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card" data-tilt>
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+            </svg>
+          </div>
+          <h3>AI-Powered Challenges</h3>
+          <p>Generate images from text prompts and compete against other teams using cutting-edge AI models.</p>
+        </div>
+        <div class="feature-card" data-tilt>
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+            </svg>
+          </div>
+          <h3>Live Leaderboard</h3>
+          <p>Watch scores update in real-time with WebSocket-powered leaderboard. Every point counts!</p>
+        </div>
+        <div class="feature-card" data-tilt>
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+            </svg>
+          </div>
+          <h3>Team Collaboration</h3>
+          <p>Form teams, strategize together, and unleash your combined creative potential.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Explore / Navigation Cards Section -->
+    <section class="explore-section" id="explore">
+      <div class="section-header">
+        <span class="section-tag">// MODULES</span>
+        <h2 class="section-title">Explore <span class="gradient-text">Modules</span></h2>
+        <p class="section-desc">Choose your path into the Tech-Fusion ecosystem.</p>
+      </div>
+
+      <div class="nav-cards-grid">
+
+        <!-- Card 1: Registration -->
+        <a href="/register" class="nav-card" id="card-register">
+          <div class="card-glow"></div>
+          <div class="card-content">
+            <div class="card-icon-wrap">
+              <div class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z"/>
+                </svg>
+              </div>
+              <span class="card-number">01</span>
+            </div>
+            <h3 class="card-title">Registration</h3>
+            <p class="card-desc">Register your team and get your unique Team ID to enter the competition arena.</p>
+            <div class="card-footer">
+              <span class="card-tag">Open</span>
+              <span class="card-arrow">→</span>
+            </div>
+          </div>
+          <div class="card-border-anim"></div>
+        </a>
+
+        <!-- Card 2: Team Dashboard -->
+        <a href="/dashboard" class="nav-card" id="card-dashboard">
+          <div class="card-glow"></div>
+          <div class="card-content">
+            <div class="card-icon-wrap">
+              <div class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+                </svg>
+              </div>
+              <span class="card-number">02</span>
+            </div>
+            <h3 class="card-title">Team Dashboard</h3>
+            <p class="card-desc">Enter the AI Prompt Battle arena. Generate images, submit prompts, and compete!</p>
+            <div class="card-footer">
+              <span class="card-tag">Competition</span>
+              <span class="card-arrow">→</span>
+            </div>
+          </div>
+          <div class="card-border-anim"></div>
+        </a>
+
+        <!-- Card 3: Judge Panel -->
+        <a href="/admin" class="nav-card" id="card-judge">
+          <div class="card-glow"></div>
+          <div class="card-content">
+            <div class="card-icon-wrap">
+              <div class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+                </svg>
+              </div>
+              <span class="card-number">03</span>
+            </div>
+            <h3 class="card-title">Admin Panel</h3>
+            <p class="card-desc">Login as admin to start/stop the event, manage teams, and control the competition.</p>
+            <div class="card-footer">
+              <span class="card-tag">Admin</span>
+              <span class="card-arrow">→</span>
+            </div>
+          </div>
+          <div class="card-border-anim"></div>
+        </a>
+
+        <!-- Card 4: Judge Panel -->
+        <a href="/judge" class="nav-card" id="card-teams">
+          <div class="card-glow"></div>
+          <div class="card-content">
+            <div class="card-icon-wrap">
+              <div class="card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
+                </svg>
+              </div>
+              <span class="card-number">04</span>
+            </div>
+            <h3 class="card-title">Judge Panel</h3>
+            <p class="card-desc">Login as judge to view the live leaderboard, score teams, and export results.</p>
+            <div class="card-footer">
+              <span class="card-tag">Judge</span>
+              <span class="card-arrow">→</span>
+            </div>
+          </div>
+          <div class="card-border-anim"></div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Terminal Section (cool decoration) -->
+    <section class="terminal-section">
+      <div class="terminal-window">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <span class="terminal-title">tech-fusion ~ system</span>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+          <div class="terminal-line">
+            <span class="t-prompt">$</span>
+            <span class="t-cmd" id="t-line-1"></span>
+          </div>
+          <div class="terminal-line t-output" id="t-output-1" style="display:none;">
+            <span class="t-success">✓</span> System initialized. All modules online.
+          </div>
+          <div class="terminal-line" id="t-line-2-wrap" style="display:none;">
+            <span class="t-prompt">$</span>
+            <span class="t-cmd" id="t-line-2"></span>
+          </div>
+          <div class="terminal-line t-output" id="t-output-2" style="display:none;">
+            <span class="t-success">✓</span> AI Engine: <span class="t-highlight">ACTIVE</span> | WebSocket: <span class="t-highlight">CONNECTED</span> | DB: <span class="t-highlight">ONLINE</span>
+          </div>
+          <div class="terminal-line" id="t-line-3-wrap" style="display:none;">
+            <span class="t-prompt">$</span>
+            <span class="t-cmd" id="t-line-3"></span>
+          </div>
+          <div class="terminal-line t-output" id="t-output-3" style="display:none;">
+            <span class="t-info">→</span> Awaiting participants... <span class="t-cursor">█</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <span class="nav-logo-icon">⚡</span>
+          <span class="nav-logo-text">TECH<span class="accent">FUSION</span></span>
+        </div>
+        <p class="footer-text">Built with innovation & code. © 2026 Tech-Fusion.</p>
+        <div class="footer-links">
+          <a href="/register">Register</a>
+          <a href="/dashboard">Dashboard</a>
+          <a href="/admin">Admin</a>
+          <a href="/judge">Judge</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

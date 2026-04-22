@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech-Fusion | Judge Login</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    .judge-login-card {
+      max-width: 440px;
+      margin: 80px auto;
+      text-align: center;
+    }
+    .role-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: rgba(167, 139, 250, 0.15);
+      color: #a78bfa;
+      margin-bottom: 16px;
+    }
+    .form-group {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .form-group input {
+      width: 100%;
+    }
+    .error-msg {
+      color: var(--danger);
+      text-align: center;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Card -->
+  <div class="container" id="login-section">
+    <div class="glass-card judge-login-card">
+      <span class="role-badge">⚖️ Judge Access</span>
+      <h1>Judge Login</h1>
+      <p style="margin-bottom: 24px;">Enter your judge credentials to access the leaderboard.</p>
+
+      <div id="error-msg" class="error-msg"></div>
+
+      <form id="judge-login-form" style="display: flex; flex-direction: column; gap: 4px;">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="judge-email" placeholder="judge@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="text" id="judge-password" placeholder="Enter password" required>
+        </div>
+        <button type="submit" style="width: 100%; margin-top: 12px;">Login as Judge</button>
+      </form>
+
+      <p style="text-align: center; margin-top: 20px; font-size: 0.85rem;">
+        <a href="/" style="color: var(--primary);">← Back to Home</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Check if already logged in
+    const existingToken = localStorage.getItem('techfusion_judge_token');
+    if (existingToken) {
+      window.location.href = '/judge-dashboard';
+    }
+
+    document.getElementById('judge-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('judge-email').value.trim();
+      const password = document.getElementById('judge-password').value.trim();
+      const errorEl = document.getElementById('error-msg');
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/judge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem('techfusion_judge_token', data.token);
+          // Redirect to the judge leaderboard
+          window.location.href = '/judge-dashboard';
+        } else {
+          errorEl.textContent = data.error || 'Login failed.';
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = 'Network error. Try again.';
+        errorEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
