@@ -1,4 +1,19 @@
-const socket = io();
+let pusher = null;
+let channel = null;
+
+async function initRealTime() {
+  try {
+    const res = await fetch('/api/config');
+    const config = await res.json();
+    if (config.pusher_key) {
+      pusher = new Pusher(config.pusher_key, { cluster: config.pusher_cluster || 'mt1' });
+      channel = pusher.subscribe('tech-fusion-channel');
+      channel.bind('leaderboard_update', () => fetchLeaderboard());
+    }
+  } catch (err) { console.error(err); }
+}
+initRealTime();
+
 const leaderboardBody = document.getElementById('leaderboard-body');
 let teamsData = [];
 let judgeToken = localStorage.getItem('techfusion_judge_token');
@@ -160,10 +175,6 @@ function exportPDF() {
   html2pdf().set(opt).from(element).save();
 }
 
-// Real-time updates
-socket.on('leaderboard_update', () => {
-  fetchLeaderboard();
-});
 
 // Particles from main (simplified version)
 function initParticles() {

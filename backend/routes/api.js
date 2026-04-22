@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
 const Team = require('../models/Team');
 const EventState = require('../models/EventState');
 const { generateImage, evaluateImage } = require('../services/ai');
@@ -29,6 +30,14 @@ function authorizeRoles(...allowedRoles) {
     }
     next();
   };
+}
+
+// Helper to Trigger Pusher Events
+function triggerSync(req, event, data = {}) {
+  const pusher = req.app.get('pusher');
+  if (pusher) {
+    pusher.trigger('tech-fusion-channel', event, data);
+  }
 }
 
 // Generate unique Team ID: TEAM-XXXXXX
@@ -133,7 +142,15 @@ router.post('/auth/judge', (req, res) => {
 
 // ===== EVENT STATE CONTROL =====
 
-// Get event status (public)
+// Get public config (Pusher key)
+router.get('/config', (req, res) => {
+  res.json({
+    pusher_key: process.env.PUSHER_KEY,
+    pusher_cluster: process.env.PUSHER_CLUSTER
+  });
+});
+
+// Update status to include public
 router.get('/event/status', async (req, res) => {
   try {
     let state = await EventState.findOne({ key: 'main' });
@@ -152,27 +169,21 @@ router.post('/event/start', authenticateToken, async (req, res) => {
     return res.status(403).json({ error: 'Only admin can start the event.' });
   }
   try {
-    const state = await EventState.findOneAndUpdate(
+    await EventState.findOneAndUpdate(
       { key: 'main' },
       { 
         event_started: true, 
         started_at: new Date(),
         started_by: req.user.email 
       },
-      { upsert: true, new: true }
+      { upsert: true }
     );
 
-    // Broadcast to all clients (Teams and Admins)
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('event_started');
-      console.log('Event Started signal broadcasted');
-    }
+    triggerSync(req, 'event_started');
 
     res.json({ success: true, event_started: true });
   } catch (error) {
-    console.error('Start event error:', error);
-    res.status(500).json({ error: 'Internal server error while starting event.' });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -182,42 +193,27 @@ router.post('/event/stop', authenticateToken, async (req, res) => {
     return res.status(403).json({ error: 'Only admin can stop the event.' });
   }
   try {
-    const state = await EventState.findOneAndUpdate(
+    await EventState.findOneAndUpdate(
       { key: 'main' },
       { event_started: false },
-      { upsert: true, new: true }
+      { upsert: true }
     );
 
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('event_stopped');
-      console.log('Event Stopped signal broadcasted');
-    }
+    triggerSync(req, 'event_stopped');
 
     res.json({ success: true, event_started: false });
   } catch (error) {
-    console.error('Stop event error:', error);
-    res.status(500).json({ error: 'Internal server error while stopping event.' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Disqualify (Protected by JWT to ensure a team can only disqualify themselves via client script, or admin)
+// Disqualify
 router.post('/disqualify', authenticateToken, async (req, res) => {
   try {
-    // team_id extracted from JWT to prevent tampering
     const team_id = req.user.team_id; 
+    const team = await Team.findOneAndUpdate({ team_id }, { disqualified: true }, { new: true });
     
-    const team = await Team.findOneAndUpdate(
-      { team_id },
-      { disqualified: true },
-      { returnDocument: 'after' }
-    );
-    
-    // Emit real-time disqualification to judges
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('leaderboard_update');
-    }
+    triggerSync(req, 'leaderboard_update');
 
     res.json({ success: true, team });
   } catch (error) {
@@ -225,21 +221,19 @@ router.post('/disqualify', authenticateToken, async (req, res) => {
   }
 });
 
-// Track active submissions to prevent concurrent API flooding by the same team
+// Track active submissions
 const activeSubmissions = new Set();
 
 // Submit Prompt (Protected by JWT)
 router.post('/submit', authenticateToken, async (req, res) => {
-  // Use team_id from JWT payload to prevent identity spoofing
   const team_id = req.user.team_id;
   const { prompt } = req.body;
+  const cloudinary = req.app.get('cloudinary');
 
-  // 1. Strict Validation
   if (!prompt || typeof prompt !== 'string' || prompt.length > 500) {
     return res.status(400).json({ error: 'Prompt must be a string and under 500 characters' });
   }
 
-  // Prevent concurrent submissions from the same team
   if (activeSubmissions.has(team_id)) {
     return res.status(429).json({ error: 'A submission is already in progress. Please wait.' });
   }
@@ -247,75 +241,63 @@ router.post('/submit', authenticateToken, async (req, res) => {
   activeSubmissions.add(team_id);
 
   try {
-    // Check if event is started
     const eventState = await EventState.findOne({ key: 'main' });
     if (!eventState || !eventState.event_started) {
-      throw new Error('Event has not started yet. Please wait for the admin to start the event.');
+      throw new Error('Event has not started yet.');
     }
 
     const team = await Team.findOne({ team_id });
-    if (!team) throw new Error('Team not found');
-    if (team.disqualified) throw new Error('Team is disqualified');
-    if (team.submissions.length >= 3) throw new Error('Maximum submissions reached (3)');
+    if (!team || team.disqualified || team.submissions.length >= 3) {
+      throw new Error('Invalid submission state (Max attempts 3 or disqualified).');
+    }
 
-    // Generate filename and paths
-    const imageName = `${team_id}_${Date.now()}.jpg`;
-    const imagePath = path.join(__dirname, '../uploads/generated', imageName);
-    const referenceImagePath = path.join(__dirname, '../uploads/reference/reference.jpg');
+    // 1. Generate Image to Temp Path (using OS temp or Vercel /tmp)
+    const tempImageName = `${team_id}_${Date.now()}.jpg`;
+    const tempPath = path.join('/tmp', tempImageName);
+    const referenceImagePath = path.join(__dirname, '../public/reference.jpg'); // Moved to public for Vercel
 
-    // 1. Generate Image (Server-side only)
-    await generateImage(prompt, imagePath);
+    await generateImage(prompt, tempPath);
 
-    // 2. Evaluate CLIP (Server-side only)
-    let clipScore = await evaluateClipSimilarity(imagePath, referenceImagePath);
-    
-    // 3. Evaluate Gemini (Server-side only)
-    let geminiScore = await evaluateImage(prompt, imagePath, referenceImagePath);
+    // 2. Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(tempPath, {
+      folder: 'tech-fusion/generated',
+      public_id: tempImageName.split('.')[0]
+    });
 
-    // Consistency Rules: Clamp between 0 and 100
+    const cloudinaryUrl = uploadResult.secure_url;
+
+    // 3. Evaluate CLIP & Gemini (Using URLs)
+    let clipScore = await evaluateClipSimilarity(cloudinaryUrl, referenceImagePath);
+    let geminiScore = await evaluateImage(prompt, cloudinaryUrl, referenceImagePath);
+
     clipScore = Math.max(0, Math.min(100, Number(clipScore) || 0));
     geminiScore = Math.max(0, Math.min(100, Number(geminiScore) || 0));
+    let finalScore = Math.round(((0.6 * clipScore) + (0.4 * geminiScore)) * 100) / 100;
 
-    // 4. Calculate Final Score
-    let finalScore = (0.6 * clipScore) + (0.4 * geminiScore);
-    
-    // Consistency Rules: Round to 2 decimal places
-    clipScore = Math.round(clipScore * 100) / 100;
-    geminiScore = Math.round(geminiScore * 100) / 100;
-    finalScore = Math.round(finalScore * 100) / 100;
-
-    // 5. Save Submission
+    // 4. Save Submission
     team.submissions.push({
       prompt,
-      image_path: `/uploads/generated/${imageName}`,
+      image_path: cloudinaryUrl,
       clip_score: clipScore,
       gemini_score: geminiScore,
       final_score: finalScore
     });
 
-    // Update best score (must store maximum only)
-    if (finalScore > team.best_score) {
-      team.best_score = finalScore;
-    }
-
+    if (finalScore > team.best_score) team.best_score = finalScore;
     await team.save();
 
-    // Emit real-time update
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('leaderboard_update');
-    }
+    triggerSync(req, 'leaderboard_update');
+
+    // Clean up /tmp
+    if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
 
     res.json({
       success: true,
       submission: team.submissions[team.submissions.length - 1],
-      best_score: team.best_score,
-      attempts_used: team.submissions.length
+      best_score: team.best_score
     });
   } catch (error) {
-    // Return 400 for expected errors to avoid flooding logs with 500s
-    const status = ['Team not found', 'Team is disqualified', 'Maximum submissions reached (3)'].includes(error.message) ? 403 : 500;
-    res.status(status).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   } finally {
     activeSubmissions.delete(team_id);
   }
@@ -324,31 +306,14 @@ router.post('/submit', authenticateToken, async (req, res) => {
 // Leaderboard
 router.get('/leaderboard', async (req, res) => {
   try {
-    // Top 25, not disqualified, sorted by best score
-    const teams = await Team.find({ disqualified: false })
-      .sort({ best_score: -1 })
-      .limit(25);
-    
+    const teams = await Team.find({ disqualified: false }).sort({ best_score: -1 }).limit(25);
     res.json(teams);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Team ID list for registration desk / organizers
-router.get('/teams', async (req, res) => {
-  try {
-    const teams = await Team.find()
-      .select('team_id team_name')
-      .sort({ _id: 1 });
-
-    res.json(teams);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// All Teams for judge view (includes disqualified and full history)
+// All Teams for Admin
 router.get('/admin/teams', authenticateToken, authorizeRoles('admin', 'judge'), async (req, res) => {
   try {
     const teams = await Team.find().sort({ best_score: -1 });
@@ -362,19 +327,9 @@ router.get('/admin/teams', authenticateToken, authorizeRoles('admin', 'judge'), 
 router.post('/admin/score', authenticateToken, authorizeRoles('admin', 'judge'), async (req, res) => {
   try {
     const { team_id, round2_score } = req.body;
+    const team = await Team.findOneAndUpdate({ team_id }, { round2_score: Number(round2_score) }, { new: true });
     
-    const team = await Team.findOne({ team_id });
-    if (!team) return res.status(404).json({ error: 'Team not found' });
-    
-    team.round2_score = Number(round2_score);
-    await team.save();
-
-    // Emit update
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('leaderboard_update');
-    }
-
+    triggerSync(req, 'leaderboard_update');
     res.json({ success: true, team });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -382,3 +337,4 @@ router.post('/admin/score', authenticateToken, authorizeRoles('admin', 'judge'),
 });
 
 module.exports = router;
+

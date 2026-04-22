@@ -1,4 +1,6 @@
 import os
+import requests
+from io import BytesIO
 from flask import Flask, request, jsonify
 import torch
 from transformers import CLIPProcessor, CLIPModel
@@ -6,30 +8,32 @@ from PIL import Image
 
 app = Flask(__name__)
 
-# Load the model and processor globally to avoid reloading on every request
-# Using the CPU index URL when installing keeps it lightweight.
-print("Loading CLIP model... This may take a moment.")
+# Load the model and processor globally
 model_id = "openai/clip-vit-base-patch32"
 model = CLIPModel.from_pretrained(model_id)
 processor = CLIPProcessor.from_pretrained(model_id)
-print("CLIP model loaded successfully.")
+
+def load_image(image_source):
+    """Helper to load image from path or URL"""
+    if str(image_source).startswith(('http://', 'https://')):
+        response = requests.get(image_source)
+        return Image.open(BytesIO(response.content)).convert("RGB")
+    else:
+        return Image.open(image_source).convert("RGB")
 
 @app.route('/evaluate', methods=['POST'])
 def evaluate():
     try:
         data = request.json
-        generated_image_path = data.get('generated_image_path')
-        reference_image_path = data.get('reference_image_path')
+        gen_img_src = data.get('generated_image_path')
+        ref_img_src = data.get('reference_image_path')
 
-        if not generated_image_path or not reference_image_path:
-            return jsonify({'error': 'Missing image paths'}), 400
+        if not gen_img_src or not ref_img_src:
+            return jsonify({'error': 'Missing image sources'}), 400
 
-        if not os.path.exists(generated_image_path) or not os.path.exists(reference_image_path):
-            return jsonify({'error': 'One or both image paths do not exist'}), 400
-
-        # Load images
-        gen_img = Image.open(generated_image_path).convert("RGB")
-        ref_img = Image.open(reference_image_path).convert("RGB")
+        # Load images (could be URLs or local paths)
+        gen_img = load_image(gen_img_src)
+        ref_img = load_image(ref_img_src)
 
         # Process and get embeddings
         inputs = processor(images=[gen_img, ref_img], return_tensors="pt")
@@ -40,16 +44,13 @@ def evaluate():
         # Normalize features
         image_features = image_features / image_features.norm(p=2, dim=-1, keepdim=True)
         
-        # Calculate cosine similarity (dot product of normalized vectors)
+        # Calculate cosine similarity
         gen_features = image_features[0]
         ref_features = image_features[1]
         
         similarity = torch.dot(gen_features, ref_features).item()
         
-        # Convert similarity (typically 0.4 to 1.0 for clip) to a 0-100 score
-        # A simple linear stretch or just mapping 0-1 to 0-100
-        # For simplicity, we just take max(0, similarity) * 100
-        # You might want to tune this mapping for realistic scores
+        # Scale score
         score = max(0.0, min(100.0, similarity * 100.0))
 
         return jsonify({
@@ -57,8 +58,11 @@ def evaluate():
         })
 
     except Exception as e:
-        print(f"Error evaluating images: {e}")
+        print(f"Error evaluating: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(port=5000, host='127.0.0.1')
+    # Vercel handles the listener, but for local testing:
+    port = int(os.environ.get('PORT', 5000))
+    app.run(port=port, host='0.0.0.0')
+

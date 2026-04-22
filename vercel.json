@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "backend/server.js", "use": "@vercel/node" },
+    { "src": "clip_service/app.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/api/python/(.*)", "dest": "clip_service/app.py" },
+    { "src": "/api/(.*)", "dest": "backend/server.js" },
+    { "src": "/(.*)", "dest": "backend/public/$1" }
+  ]
+}

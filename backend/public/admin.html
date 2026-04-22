@@ -217,14 +217,27 @@
     </div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
   <script>
-    const socket = io();
-    let adminToken = localStorage.getItem('techfusion_admin_token');
+    let pusher = null;
+    let channel = null;
 
-    // Real-time synchronization
-    socket.on('event_started', () => updateStatusUI(true));
-    socket.on('event_stopped', () => updateStatusUI(false));
+    async function initRealTime() {
+      try {
+        const res = await fetch('/api/config');
+        const config = await res.json();
+        if (config.pusher_key) {
+          pusher = new Pusher(config.pusher_key, { cluster: config.pusher_cluster || 'mt1' });
+          channel = pusher.subscribe('tech-fusion-channel');
+          channel.bind('event_started', () => updateStatusUI(true));
+          channel.bind('event_stopped', () => updateStatusUI(false));
+          channel.bind('leaderboard_update', () => fetchLeaderboard());
+        }
+      } catch (err) { console.error(err); }
+    }
+    initRealTime();
+
+    let adminToken = localStorage.getItem('techfusion_admin_token');
 
     // Check if already logged in
     if (adminToken) {
@@ -410,10 +423,7 @@
       }
     }
 
-    // Real-time updates
-    socket.on('leaderboard_update', fetchLeaderboard);
-    socket.on('event_started', () => updateStatusUI(true));
-    socket.on('event_stopped', () => updateStatusUI(false));
   </script>
+
 </body>
 </html>
