@@ -1,0 +1,12 @@
+{
+  "name": "think-to-build-root",
+  "version": "1.0.0",
+  "scripts": {
+    "install": "cd backend && npm install",
+    "build": "cd backend && npm install",
+    "start": "cd backend && node server.js"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}
