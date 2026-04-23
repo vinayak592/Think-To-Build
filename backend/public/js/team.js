@@ -5,6 +5,7 @@ const socket = io();
 // Real-time synchronization
 socket.on('event_started', () => {
   eventStarted = true;
+  updateReferenceVisibility();
   if (currentTeam && !currentTeam.disqualified && currentTeam.submissions.length < 3) {
     unlockInterface();
   }
@@ -12,6 +13,7 @@ socket.on('event_started', () => {
 
 socket.on('event_stopped', () => {
   eventStarted = false;
+  updateReferenceVisibility();
   lockInterface('EVENT_NOT_STARTED');
 });
 
@@ -32,8 +34,22 @@ const generateBtn = document.getElementById('generate-btn');
 const dqBanner = document.getElementById('dq-banner');
 const submissionsGrid = document.getElementById('submissions-grid');
 const loadingOverlay = document.getElementById('loading');
+const referenceImage = document.getElementById('reference-image');
+const referenceLockNotice = document.getElementById('reference-lock-notice');
 
 let eventStarted = false;
+
+function updateReferenceVisibility() {
+  if (!referenceImage || !referenceLockNotice) return;
+
+  if (eventStarted) {
+    referenceImage.style.display = 'block';
+    referenceLockNotice.style.display = 'none';
+  } else {
+    referenceImage.style.display = 'none';
+    referenceLockNotice.style.display = 'flex';
+  }
+}
 
 // Add registration link to login page dynamically since we reuse the main index.html
 document.addEventListener('DOMContentLoaded', () => {
@@ -102,6 +118,9 @@ function updateUI() {
   attemptCounter.textContent = `${currentTeam.submissions.length} / 3`;
   bestScoreEl.textContent = currentTeam.best_score.toFixed(2);
 
+  // Always sync event status so reference image visibility is accurate.
+  checkEventStatus();
+
   if (currentTeam.disqualified) {
     lockInterface('DISQUALIFIED');
     return;
@@ -113,9 +132,6 @@ function updateUI() {
     return;
   }
 
-  // Check event status
-  checkEventStatus();
-
   renderSubmissions();
 }
 
@@ -124,6 +140,7 @@ async function checkEventStatus() {
     const res = await fetch('/api/event/status');
     const data = await res.json();
     eventStarted = data.event_started;
+    updateReferenceVisibility();
 
     if (!eventStarted) {
       lockInterface('EVENT_NOT_STARTED');
@@ -141,6 +158,7 @@ function unlockInterface() {
   generateBtn.disabled = false;
   promptInput.placeholder = 'Describe the image in detail...';
   dqBanner.style.display = 'none';
+  updateReferenceVisibility();
 
   // Remove waiting banner if exists
   const waitBanner = document.getElementById('event-wait-banner');
@@ -168,6 +186,7 @@ function renderSubmissions() {
 function lockInterface(reason) {
   promptInput.disabled = true;
   generateBtn.disabled = true;
+  updateReferenceVisibility();
   
   if (reason === 'DISQUALIFIED') {
     dqBanner.style.display = 'block';
@@ -324,6 +343,7 @@ socket.on('leaderboard_update', async () => {
 // Listen for event state changes
 socket.on('event_started', () => {
   eventStarted = true;
+  updateReferenceVisibility();
   if (currentTeam && !currentTeam.disqualified && currentTeam.submissions.length < 3) {
     unlockInterface();
   }
@@ -331,6 +351,7 @@ socket.on('event_started', () => {
 
 socket.on('event_stopped', () => {
   eventStarted = false;
+  updateReferenceVisibility();
   if (currentTeam && !currentTeam.disqualified && currentTeam.submissions.length < 3) {
     lockInterface('EVENT_NOT_STARTED');
   }

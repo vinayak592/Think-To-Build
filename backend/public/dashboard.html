@@ -107,6 +107,21 @@
       margin: 15px 0;
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
+    .ref-lock-notice {
+      margin: 15px 0;
+      padding: 18px 12px;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border-radius: 12px;
+      background: rgba(96, 165, 250, 0.08);
+      border: 1px dashed rgba(96, 165, 250, 0.35);
+      color: #93c5fd;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
 
     .prompt-card {
       display: flex;
@@ -268,7 +283,10 @@
         <span class="section-tag">// TARGET</span>
         <h3 style="margin: 10px 0;">Reference Image</h3>
         <p style="font-size: 0.8rem; color: #8892b0; margin-bottom: 15px;">Your goal is to recreate this target using AI prompts.</p>
-        <img src="/uploads/reference/reference.jpg" class="ref-img" alt="Target" onerror="this.src='https://via.placeholder.com/400x400/10172a/60a5fa?text=TARGET+IMAGE'">
+        <div id="reference-lock-notice" class="ref-lock-notice">
+          Reference image is locked. It will be revealed after the admin starts the event.
+        </div>
+        <img id="reference-image" src="/uploads/reference/reference.jpg" class="ref-img" alt="Target" style="display: none;" onerror="this.src='https://via.placeholder.com/400x400/10172a/60a5fa?text=TARGET+IMAGE'">
         <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.75rem; color: #60a5fa; border: 1px solid rgba(96,165,250,0.1);">
           <strong>Hint:</strong> Pay attention to lighting, art style, and foreground details.
         </div>
