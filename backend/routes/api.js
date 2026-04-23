@@ -37,10 +37,26 @@ function generateTeamId() {
   return `TEAM-${randomNum}`;
 }
 
+// Registration Status
+router.get('/registration-status', async (req, res) => {
+  try {
+    const teamCount = await Team.countDocuments();
+    const isOpen = teamCount < 50;
+    res.json({ open: isOpen, message: isOpen ? '' : 'Registration is closed. Maximum 50 teams allowed.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { email, team_name, participant_name } = req.body;
+    const teamCount = await Team.countDocuments();
+    if (teamCount >= 50) {
+      return res.status(400).json({ error: 'Registration is closed. Maximum 50 teams allowed.' });
+    }
+
+    const { email, team_name, participant_name, member_count, members } = req.body;
     
     if (!email || !team_name || !participant_name) {
       return res.status(400).json({ error: 'Email, Team Name, and Participant Name are required.' });

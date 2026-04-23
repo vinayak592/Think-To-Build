@@ -107,6 +107,20 @@
   <canvas id="particle-canvas"></canvas>
 
   <div class="reg-wrapper">
+    <!-- Registration Closed Message -->
+    <div class="glass-card reg-card" id="registration-closed" style="display: none;">
+      <div class="reg-icon" style="color: #ef4444; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2);">
+        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"></path>
+        </svg>
+      </div>
+      <h1 style="font-family: 'Orbitron'; font-size: 1.8rem; margin-bottom: 8px; color: #ef4444;">REGISTRATION CLOSED</h1>
+      <p style="color: #8892b0; margin-bottom: 32px;">Maximum number of teams (50) has been reached. Registration is no longer available.</p>
+      <a href="/" class="btn btn-primary" style="display: block; text-decoration: none;">
+        <span class="btn-text">RETURN TO HUB</span>
+      </a>
+    </div>
+
     <!-- Registration Card -->
     <div class="glass-card reg-card" id="registration-form-card">
       <div class="reg-icon">
@@ -121,12 +135,23 @@
 
       <form id="registration-form">
         <div class="form-group">
-          <label>Participant Name</label>
+          <label>Team Member Name</label>
           <input type="text" id="participant-name" class="form-input" placeholder="e.g. John Doe" required autofocus>
         </div>
         <div class="form-group">
           <label>Team Identity / Name</label>
           <input type="text" id="team-name" class="form-input" placeholder="e.g. CORE ANALYTICS" required>
+        </div>
+        <div class="form-group">
+          <label>Team Members</label>
+          <select id="member-count" class="form-input" required>
+            <option value="1">1 Member</option>
+            <option value="2">2 Members</option>
+          </select>
+        </div>
+        <div class="form-group" id="member-two-group" style="display: none;">
+          <label>Member 2 Name</label>
+          <input type="text" id="member-2-name" class="form-input" placeholder="e.g. Alice Smith">
         </div>
         <div class="form-group">
           <label>Contact Email</label>
@@ -166,6 +191,23 @@
   </div>
 
   <script>
+    // Check registration status on page load
+    async function checkRegistrationStatus() {
+      try {
+        const res = await fetch('/api/registration-status');
+        const data = await res.json();
+        if (!data.open) {
+          document.getElementById('registration-form-card').style.display = 'none';
+          document.getElementById('registration-closed').style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Failed to check registration status:', err);
+      }
+    }
+
+    // Call on load
+    checkRegistrationStatus();
+
     // Particle background
     (function() {
       const canvas = document.getElementById('particle-canvas');
@@ -191,6 +233,14 @@
       btn.innerText = '✅ ID Copied!';
       setTimeout(() => { btn.innerText = '📋 Copy ID to Clipboard'; }, 2000);
     }
+
+    document.getElementById('member-count').addEventListener('change', function() {
+      const memberTwoGroup = document.getElementById('member-two-group');
+      memberTwoGroup.style.display = this.value === '2' ? 'block' : 'none';
+      if (this.value !== '2') {
+        document.getElementById('member-2-name').value = '';
+      }
+    });
   </script>
   <script src="/RegistrationFolder/register.js"></script>
 </body>
