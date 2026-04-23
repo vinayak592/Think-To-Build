@@ -1,10 +1,12 @@
 async function registerTeam() {
   const teamNameInput = document.getElementById('team-name');
   const emailInput = document.getElementById('team-email');
+  const participantNameInput = document.getElementById('participant-name');
   const errorEl = document.getElementById('error-msg');
   
   const teamName = teamNameInput.value.trim();
   const email = emailInput.value.trim();
+  const participantName = participantNameInput.value.trim();
   
   const formCard = document.getElementById('registration-form-card');
   const successModal = document.getElementById('success-modal');
@@ -12,7 +14,7 @@ async function registerTeam() {
 
   errorEl.style.display = 'none';
 
-  if (!teamName || !email) {
+  if (!teamName || !email || !participantName) {
     errorEl.textContent = 'Please fill in all fields.';
     errorEl.style.display = 'block';
     return;
@@ -29,7 +31,7 @@ async function registerTeam() {
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ team_name: teamName, email: email })
+      body: JSON.stringify({ team_name: teamName, email: email, participant_name: participantName })
     });
 
     const data = await res.json();

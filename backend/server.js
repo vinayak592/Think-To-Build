@@ -1,37 +1,25 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const mongoose = require('mongoose');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
-const Pusher = require('pusher');
-const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
 
 const app = express();
-
-// Pusher Setup (Real-time fallback for Vercel)
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID,
-  key: process.env.PUSHER_KEY,
-  secret: process.env.PUSHER_SECRET,
-  cluster: process.env.PUSHER_CLUSTER,
-  useTLS: true
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+  }
 });
-
-// Cloudinary Setup (Storage fallback for Vercel)
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-// Attach cloud services to app so routes can access them
-app.set('pusher', pusher);
-app.set('cloudinary', cloudinary);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 const apiRoutes = require('./routes/api');
@@ -67,21 +55,31 @@ app.get(['/judge-dashboard', '/api/admin'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public/judge.html'));
 });
 
-// MongoDB Connection (Only if not already connected - important for Serverless)
-if (mongoose.connection.readyState === 0) {
-  mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/techfusion')
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
-}
+// Ensure upload directories exist
+const generatedPath = path.join(__dirname, 'uploads/generated');
+const referencePath = path.join(__dirname, 'uploads/reference');
+if (!fs.existsSync(generatedPath)) fs.mkdirSync(generatedPath, { recursive: true });
+if (!fs.existsSync(referencePath)) fs.mkdirSync(referencePath, { recursive: true });
 
-// Export for Vercel
-module.exports = app;
+// Attach io to app so routes can access it
+app.set('io', io);
 
-// Local development server
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Development server running at http://localhost:${PORT}`);
+// Socket.io for real-time leaderboard
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
   });
-}
+});
+
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/thinktobuild')
+  .then(() => {
+    console.log('Connected to MongoDB');
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, () => {
+      console.log(`Server running on port http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => console.error('MongoDB connection error:', err));
 

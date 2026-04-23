@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tech-Fusion | Judge Login</title>
+  <title>Think to Build | Judge Login</title>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
@@ -79,7 +79,8 @@
     // Check if already logged in
     const existingToken = localStorage.getItem('techfusion_judge_token');
     if (existingToken) {
-      window.location.href = '/judge-dashboard';
+      console.log('Existing session found, redirecting...');
+      window.location.replace('/judge-dashboard');
     }
 
     document.getElementById('judge-login-form').addEventListener('submit', async (e) => {
@@ -99,8 +100,9 @@
 
         if (data.success) {
           localStorage.setItem('techfusion_judge_token', data.token);
-          // Redirect to the judge leaderboard
-          window.location.href = '/judge-dashboard';
+          console.log('Login successful, redirecting to dashboard...');
+          // Use replace to avoid back-button loops
+          window.location.replace('/judge-dashboard');
         } else {
           errorEl.textContent = data.error || 'Login failed.';
           errorEl.style.display = 'block';

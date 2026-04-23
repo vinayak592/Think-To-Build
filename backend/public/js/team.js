@@ -1,43 +1,23 @@
 let currentTeam = null;
 let antiCheatIntervalId = null;
-let pusher = null;
-let channel = null;
+const socket = io();
 
-// Initialize Real-time (Pusher fallback for Vercel)
-async function initRealTime() {
-  try {
-    const res = await fetch('/api/config');
-    const config = await res.json();
-    
-    if (config.pusher_key) {
-      pusher = new Pusher(config.pusher_key, {
-        cluster: config.pusher_cluster || 'mt1'
-      });
-      channel = pusher.subscribe('tech-fusion-channel');
-      
-      // Bind Events
-      channel.bind('event_started', () => {
-        eventStarted = true;
-        if (currentTeam && !currentTeam.disqualified && currentTeam.submissions.length < 3) {
-          unlockInterface();
-        }
-      });
-
-      channel.bind('event_stopped', () => {
-        eventStarted = false;
-        lockInterface('EVENT_NOT_STARTED');
-      });
-
-      channel.bind('leaderboard_update', () => {
-        if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
-      });
-    }
-  } catch (err) {
-    console.error('Failed to init Pusher:', err);
+// Real-time synchronization
+socket.on('event_started', () => {
+  eventStarted = true;
+  if (currentTeam && !currentTeam.disqualified && currentTeam.submissions.length < 3) {
+    unlockInterface();
   }
-}
+});
 
-initRealTime();
+socket.on('event_stopped', () => {
+  eventStarted = false;
+  lockInterface('EVENT_NOT_STARTED');
+});
+
+socket.on('leaderboard_update', () => {
+  if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
+});
 
 // DOM Elements
 const loginScreen = document.getElementById('login-screen');

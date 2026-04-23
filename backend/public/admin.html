@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tech-Fusion | Admin Panel</title>
+  <title>Think to Build | Admin Panel</title>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
@@ -217,27 +217,15 @@
     </div>
   </div>
 
-  <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    let pusher = null;
-    let channel = null;
-
-    async function initRealTime() {
-      try {
-        const res = await fetch('/api/config');
-        const config = await res.json();
-        if (config.pusher_key) {
-          pusher = new Pusher(config.pusher_key, { cluster: config.pusher_cluster || 'mt1' });
-          channel = pusher.subscribe('tech-fusion-channel');
-          channel.bind('event_started', () => updateStatusUI(true));
-          channel.bind('event_stopped', () => updateStatusUI(false));
-          channel.bind('leaderboard_update', () => fetchLeaderboard());
-        }
-      } catch (err) { console.error(err); }
-    }
-    initRealTime();
-
+    const socket = io();
     let adminToken = localStorage.getItem('techfusion_admin_token');
+
+    // Real-time synchronization
+    socket.on('event_started', () => updateStatusUI(true));
+    socket.on('event_stopped', () => updateStatusUI(false));
+    socket.on('leaderboard_update', () => fetchLeaderboard());
 
     // Check if already logged in
     if (adminToken) {
@@ -411,7 +399,7 @@
           tr.className = team.disqualified ? 'team-row disqualified' : 'team-row';
           tr.innerHTML = `
             <td>${i + 1}</td>
-            <td><strong>${team.team_id}</strong><br><span style="font-size:0.75rem;color:var(--text-muted);">${team.team_name || ''}</span></td>
+            <td><strong>${team.team_id}</strong><br><span style="font-size:0.75rem;color:var(--text-muted);">${team.participant_name || ''} (${team.team_name || ''})</span></td>
             <td>${team.submissions.length} / 3</td>
             <td>${team.best_score.toFixed(2)}</td>
             <td><span class="badge ${team.disqualified ? 'badge-dq' : 'badge-active'}">${team.disqualified ? 'DQ' : 'Active'}</span></td>

@@ -1,18 +1,7 @@
-let pusher = null;
-let channel = null;
+const socket = io();
 
-async function initRealTime() {
-  try {
-    const res = await fetch('/api/config');
-    const config = await res.json();
-    if (config.pusher_key) {
-      pusher = new Pusher(config.pusher_key, { cluster: config.pusher_cluster || 'mt1' });
-      channel = pusher.subscribe('tech-fusion-channel');
-      channel.bind('leaderboard_update', () => fetchLeaderboard());
-    }
-  } catch (err) { console.error(err); }
-}
-initRealTime();
+// Real-time synchronization
+socket.on('leaderboard_update', () => fetchLeaderboard());
 
 const leaderboardBody = document.getElementById('leaderboard-body');
 let teamsData = [];
@@ -25,6 +14,15 @@ if (!judgeToken) {
 
 // Fetch and render leaderboard
 async function fetchLeaderboard() {
+  console.log('Fetching leaderboard data...');
+  const contentEl = document.getElementById('leaderboard-content');
+  
+  if (!judgeToken) {
+    console.error('No judge token found in localStorage');
+    window.location.href = '/judge';
+    return;
+  }
+
   try {
     const res = await fetch('/api/admin/teams', {
       headers: {
@@ -32,31 +30,47 @@ async function fetchLeaderboard() {
       }
     });
 
+    console.log('Leaderboard fetch response status:', res.status);
+
     if (res.status === 401 || res.status === 403) {
+      console.warn('Unauthorized access, logging out...');
       logout();
       return;
     }
 
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+    }
+
     teamsData = await res.json();
+    console.log(`Successfully fetched ${teamsData.length} teams.`);
     renderLeaderboard();
   } catch (err) {
     console.error('Failed to fetch leaderboard:', err);
+    if (leaderboardBody) {
+      leaderboardBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#ef4444; padding: 40px;">
+        <div style="font-size: 1.2rem; margin-bottom: 8px;">⚠️ Connection Error</div>
+        <div>${err.message}</div>
+        <button class="btn-judge btn-export" style="margin: 20px auto;" onclick="fetchLeaderboard()">Retry Connection</button>
+      </td></tr>`;
+    }
   }
 }
 
 function renderLeaderboard() {
   leaderboardBody.innerHTML = '';
   
-  // Sort: Not disqualified first, then by final_total_score descending
-  teamsData.sort((a, b) => {
-    if (a.disqualified && !b.disqualified) return 1;
-    if (!a.disqualified && b.disqualified) return -1;
+  // Filter out disqualified teams
+  const qualifiedTeams = teamsData.filter(team => !team.disqualified);
+
+  // Sort by final_total_score descending
+  qualifiedTeams.sort((a, b) => {
     const aTotal = a.best_score + a.round2_score;
     const bTotal = b.best_score + b.round2_score;
     return bTotal - aTotal;
   });
 
-  teamsData.forEach((team, index) => {
+  qualifiedTeams.forEach((team, index) => {
     const totalScore = team.best_score + team.round2_score;
     const tr = document.createElement('tr');
     tr.className = `team-row ${team.disqualified ? 'disqualified' : ''}`;
@@ -65,7 +79,8 @@ function renderLeaderboard() {
       <td>${index + 1}</td>
       <td>
         <div class="team-id-cell">${team.team_id}</div>
-        <div style="font-size:0.75rem; color:#8892b0;">${team.team_name || 'No Name'}</div>
+        <div style="font-size:0.75rem; color:#8892b0;">${team.participant_name || 'No Participant Name'}</div>
+        <div style="font-size:0.75rem; color:#8892b0;">(${team.team_name || 'No Team Name'})</div>
       </td>
       <td>${team.submissions.length} / 3</td>
       <td>${team.best_score.toFixed(2)}</td>
@@ -167,7 +182,7 @@ function exportPDF() {
   const element = document.getElementById('leaderboard-content');
   const opt = {
     margin:       10,
-    filename:     'tech-fusion-leaderboard.pdf',
+    filename:     'think-to-build-leaderboard.pdf',
     image:        { type: 'jpeg', quality: 0.98 },
     html2canvas:  { scale: 2, backgroundColor: '#050a18' },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
@@ -221,6 +236,12 @@ function initParticles() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('Judge Dashboard Initialized');
   initParticles();
-  fetchLeaderboard();
+  if (judgeToken) {
+    fetchLeaderboard();
+  } else {
+    console.warn('Redirecting to login: Token missing');
+    window.location.href = '/judge';
+  }
 });

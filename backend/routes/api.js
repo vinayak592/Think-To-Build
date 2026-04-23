@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const jwt = require('jsonwebtoken');
-const fs = require('fs');
 const Team = require('../models/Team');
 const EventState = require('../models/EventState');
 const { generateImage, evaluateImage } = require('../services/ai');
@@ -32,14 +31,6 @@ function authorizeRoles(...allowedRoles) {
   };
 }
 
-// Helper to Trigger Pusher Events
-function triggerSync(req, event, data = {}) {
-  const pusher = req.app.get('pusher');
-  if (pusher) {
-    pusher.trigger('tech-fusion-channel', event, data);
-  }
-}
-
 // Generate unique Team ID: TEAM-XXXXXX
 function generateTeamId() {
   const randomNum = Math.floor(100000 + Math.random() * 900000);
@@ -49,10 +40,10 @@ function generateTeamId() {
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { email, team_name } = req.body;
+    const { email, team_name, participant_name } = req.body;
     
-    if (!email || !team_name) {
-      return res.status(400).json({ error: 'Email and Team Name are required.' });
+    if (!email || !team_name || !participant_name) {
+      return res.status(400).json({ error: 'Email, Team Name, and Participant Name are required.' });
     }
 
     const existingTeam = await Team.findOne({ email });
@@ -68,7 +59,7 @@ router.post('/register', async (req, res) => {
       if (!checkId) isUnique = true;
     }
 
-    const team = new Team({ team_id, email, team_name });
+    const team = new Team({ team_id, email, team_name, participant_name });
     await team.save();
 
     // Issue JWT
@@ -142,15 +133,7 @@ router.post('/auth/judge', (req, res) => {
 
 // ===== EVENT STATE CONTROL =====
 
-// Get public config (Pusher key)
-router.get('/config', (req, res) => {
-  res.json({
-    pusher_key: process.env.PUSHER_KEY,
-    pusher_cluster: process.env.PUSHER_CLUSTER
-  });
-});
-
-// Update status to include public
+// Get event status (public)
 router.get('/event/status', async (req, res) => {
   try {
     let state = await EventState.findOne({ key: 'main' });
@@ -169,17 +152,19 @@ router.post('/event/start', authenticateToken, async (req, res) => {
     return res.status(403).json({ error: 'Only admin can start the event.' });
   }
   try {
-    await EventState.findOneAndUpdate(
+    const state = await EventState.findOneAndUpdate(
       { key: 'main' },
       { 
         event_started: true, 
         started_at: new Date(),
         started_by: req.user.email 
       },
-      { upsert: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
-    triggerSync(req, 'event_started');
+    // Broadcast
+    const io = req.app.get('io');
+    if (io) io.emit('event_started');
 
     res.json({ success: true, event_started: true });
   } catch (error) {
@@ -193,13 +178,14 @@ router.post('/event/stop', authenticateToken, async (req, res) => {
     return res.status(403).json({ error: 'Only admin can stop the event.' });
   }
   try {
-    await EventState.findOneAndUpdate(
+    const state = await EventState.findOneAndUpdate(
       { key: 'main' },
       { event_started: false },
-      { upsert: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
-    triggerSync(req, 'event_stopped');
+    const io = req.app.get('io');
+    if (io) io.emit('event_stopped');
 
     res.json({ success: true, event_started: false });
   } catch (error) {
@@ -213,7 +199,8 @@ router.post('/disqualify', authenticateToken, async (req, res) => {
     const team_id = req.user.team_id; 
     const team = await Team.findOneAndUpdate({ team_id }, { disqualified: true }, { returnDocument: 'after' });
     
-    triggerSync(req, 'leaderboard_update');
+    const io = req.app.get('io');
+    if (io) io.emit('leaderboard_update');
 
     res.json({ success: true, team });
   } catch (error) {
@@ -228,7 +215,6 @@ const activeSubmissions = new Set();
 router.post('/submit', authenticateToken, async (req, res) => {
   const team_id = req.user.team_id;
   const { prompt } = req.body;
-  const cloudinary = req.app.get('cloudinary');
 
   if (!prompt || typeof prompt !== 'string' || prompt.length > 500) {
     return res.status(400).json({ error: 'Prompt must be a string and under 500 characters' });
@@ -248,36 +234,29 @@ router.post('/submit', authenticateToken, async (req, res) => {
 
     const team = await Team.findOne({ team_id });
     if (!team || team.disqualified || team.submissions.length >= 3) {
-      throw new Error('Invalid submission state (Max attempts 3 or disqualified).');
+      throw new Error('Invalid submission state.');
     }
 
-    // 1. Generate Image to Temp Path (using OS temp or Vercel /tmp)
-    const tempImageName = `${team_id}_${Date.now()}.jpg`;
-    const tempPath = path.join('/tmp', tempImageName);
-    const referenceImagePath = path.join(__dirname, '../public/reference.jpg'); // Moved to public for Vercel
+    // Generate local path
+    const imageName = `${team_id}_${Date.now()}.jpg`;
+    const imagePath = path.join(__dirname, '../uploads/generated', imageName);
+    const referenceImagePath = path.join(__dirname, '../uploads/reference/reference.jpg');
 
-    await generateImage(prompt, tempPath);
+    // 1. Generate Image (Local)
+    await generateImage(prompt, imagePath);
 
-    // 2. Upload to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(tempPath, {
-      folder: 'tech-fusion/generated',
-      public_id: tempImageName.split('.')[0]
-    });
-
-    const cloudinaryUrl = uploadResult.secure_url;
-
-    // 3. Evaluate CLIP & Gemini (Using URLs)
-    let clipScore = await evaluateClipSimilarity(cloudinaryUrl, referenceImagePath);
-    let geminiScore = await evaluateImage(prompt, cloudinaryUrl, referenceImagePath);
+    // 2. Evaluate (Local Paths)
+    let clipScore = await evaluateClipSimilarity(imagePath, referenceImagePath);
+    let geminiScore = await evaluateImage(prompt, imagePath, referenceImagePath);
 
     clipScore = Math.max(0, Math.min(100, Number(clipScore) || 0));
     geminiScore = Math.max(0, Math.min(100, Number(geminiScore) || 0));
     let finalScore = Math.round(((0.6 * clipScore) + (0.4 * geminiScore)) * 100) / 100;
 
-    // 4. Save Submission
+    // 3. Save Submission
     team.submissions.push({
       prompt,
-      image_path: cloudinaryUrl,
+      image_path: `/uploads/generated/${imageName}`,
       clip_score: clipScore,
       gemini_score: geminiScore,
       final_score: finalScore
@@ -286,10 +265,8 @@ router.post('/submit', authenticateToken, async (req, res) => {
     if (finalScore > team.best_score) team.best_score = finalScore;
     await team.save();
 
-    triggerSync(req, 'leaderboard_update');
-
-    // Clean up /tmp
-    if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+    const io = req.app.get('io');
+    if (io) io.emit('leaderboard_update');
 
     res.json({
       success: true,
@@ -303,17 +280,17 @@ router.post('/submit', authenticateToken, async (req, res) => {
   }
 });
 
-// Leaderboard
-router.get('/leaderboard', async (req, res) => {
+// Team list
+router.get('/teams', async (req, res) => {
   try {
-    const teams = await Team.find({ disqualified: false }).sort({ best_score: -1 }).limit(25);
+    const teams = await Team.find().select('team_id team_name participant_name').sort({ _id: 1 });
     res.json(teams);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// All Teams for Admin
+// All Teams (Admin)
 router.get('/admin/teams', authenticateToken, authorizeRoles('admin', 'judge'), async (req, res) => {
   try {
     const teams = await Team.find().sort({ best_score: -1 });
@@ -323,13 +300,14 @@ router.get('/admin/teams', authenticateToken, authorizeRoles('admin', 'judge'), 
   }
 });
 
-// Admin Round 2 Scoring
+// Admin Score Update
 router.post('/admin/score', authenticateToken, authorizeRoles('admin', 'judge'), async (req, res) => {
   try {
     const { team_id, round2_score } = req.body;
     const team = await Team.findOneAndUpdate({ team_id }, { round2_score: Number(round2_score) }, { returnDocument: 'after' });
-    
-    triggerSync(req, 'leaderboard_update');
+    const io = req.app.get('io');
+    if (io) io.emit('leaderboard_update');
+
     res.json({ success: true, team });
   } catch (error) {
     res.status(500).json({ error: error.message });

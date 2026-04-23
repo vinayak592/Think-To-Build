@@ -8,7 +8,8 @@ async function runTest() {
     console.log('Testing Registration...');
     const regRes = await axios.post(`${baseURL}/register`, {
       email: `test_${Date.now()}@test.com`,
-      team_name: 'Auto Test Team'
+      team_name: 'Auto Test Team',
+      participant_name: 'Test User'
     });
     
     if (!regRes.data.success || !regRes.data.token) {

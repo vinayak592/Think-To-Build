@@ -6,7 +6,6 @@
   <title>Tech-Fusion | Judge Dashboard</title>
   <link rel="stylesheet" href="main.css">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     body {
       background: #050a18;
@@ -202,7 +201,7 @@
     <div class="header-bar">
       <div class="judge-title">
         <h1>JUDGE PANEL</h1>
-        <p style="font-size: 0.85rem; color: #8892b0;">Tech-Fusion Real-time Leaderboard</p>
+        <p style="font-size: 0.85rem; color: #8892b0;">Think to Build Real-time Leaderboard</p>
       </div>
       <div class="judge-controls">
         <button class="btn-judge btn-export" onclick="exportPDF()">
@@ -240,7 +239,10 @@
 
   <!-- Reusing main.js particles logic with some tweaks if needed, or including directly -->
   <script src="https://js.pusher.com/8.0.1/pusher.min.js"></script>
-  <script src="/js/judge.js"></script>
 
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="/js/judge.js"></script>
 </body>
 </html>

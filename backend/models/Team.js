@@ -13,6 +13,7 @@ const teamSchema = new mongoose.Schema({
   team_id: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   team_name: { type: String, required: true },
+  participant_name: { type: String, required: true },
   disqualified: { type: Boolean, default: false },
   submissions: [submissionSchema],
   best_score: { type: Number, default: 0 },

@@ -1,5 +1,5 @@
 /* ============================================
-   TECH-FUSION MAIN PAGE — JavaScript
+   THINK TO BUILD MAIN PAGE — JavaScript
    Particles, typing effect, terminal animation,
    counter animation, and scroll reveals
    ============================================ */
@@ -8,142 +8,109 @@
   'use strict';
 
   // ==============================
-  // 1. PARTICLE CANVAS ANIMATION
+  // 1. 3D PARTICLE ANIMATION (Three.js)
   // ==============================
   const canvas = document.getElementById('particle-canvas');
-  const ctx = canvas.getContext('2d');
-  let particles = [];
-  let mouse = { x: null, y: null };
-  const PARTICLE_COUNT = 80;
-  const CONNECTION_DIST = 150;
-  const MOUSE_RADIUS = 200;
+  
+  // Basic Three.js setup
+  const scene = new THREE.Scene();
+  // We want to add a subtle fog for depth
+  scene.fog = new THREE.FogExp2(0x050a18, 0.0015);
 
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+  camera.position.z = 500;
+
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+
+  // Create particles
+  const particlesGeometry = new THREE.BufferGeometry();
+  const particlesCount = 1500;
+  
+  const posArray = new Float32Array(particlesCount * 3);
+  const colorsArray = new Float32Array(particlesCount * 3);
+  
+  const colorPalette = [
+    new THREE.Color(0x60a5fa), // blue-400
+    new THREE.Color(0xa78bfa), // purple-400
+    new THREE.Color(0x22d3ee), // cyan-400
+    new THREE.Color(0xf472b6)  // pink-400
+  ];
+
+  for(let i = 0; i < particlesCount * 3; i+=3) {
+    // Spread particles in a large 3D area
+    posArray[i] = (Math.random() - 0.5) * 2000;
+    posArray[i+1] = (Math.random() - 0.5) * 2000;
+    posArray[i+2] = (Math.random() - 0.5) * 2000;
+    
+    // Assign random color from palette
+    const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+    colorsArray[i] = color.r;
+    colorsArray[i+1] = color.g;
+    colorsArray[i+2] = color.b;
   }
 
-  class Particle {
-    constructor() {
-      this.x = Math.random() * canvas.width;
-      this.y = Math.random() * canvas.height;
-      this.vx = (Math.random() - 0.5) * 0.6;
-      this.vy = (Math.random() - 0.5) * 0.6;
-      this.radius = Math.random() * 2 + 0.5;
-      this.baseAlpha = Math.random() * 0.5 + 0.2;
-      this.alpha = this.baseAlpha;
-      // Random color from palette
-      const colors = [
-        { r: 96, g: 165, b: 250 },   // blue
-        { r: 167, g: 139, b: 250 },   // purple
-        { r: 34, g: 211, b: 238 },    // cyan
-        { r: 244, g: 114, b: 182 },   // pink
-      ];
-      this.color = colors[Math.floor(Math.random() * colors.length)];
-    }
+  particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+  particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
 
-    update() {
-      this.x += this.vx;
-      this.y += this.vy;
+  // Create a custom material that makes particles glow and use vertex colors
+  const particlesMaterial = new THREE.PointsMaterial({
+    size: 4,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true
+  });
 
-      // Bounce off edges
-      if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-      if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+  // Create the particle system mesh
+  const particleMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+  scene.add(particleMesh);
 
-      // Mouse interaction
-      if (mouse.x !== null) {
-        const dx = this.x - mouse.x;
-        const dy = this.y - mouse.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < MOUSE_RADIUS) {
-          const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS;
-          this.vx += (dx / dist) * force * 0.15;
-          this.vy += (dy / dist) * force * 0.15;
-          this.alpha = Math.min(1, this.baseAlpha + force * 0.5);
-        } else {
-          this.alpha += (this.baseAlpha - this.alpha) * 0.05;
-        }
-      }
+  // Mouse interaction variables
+  let mouseX = 0;
+  let mouseY = 0;
+  let targetX = 0;
+  let targetY = 0;
+  const windowHalfX = window.innerWidth / 2;
+  const windowHalfY = window.innerHeight / 2;
 
-      // Limit velocity
-      const maxSpeed = 1.5;
-      const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-      if (speed > maxSpeed) {
-        this.vx = (this.vx / speed) * maxSpeed;
-        this.vy = (this.vy / speed) * maxSpeed;
-      }
-    }
+  document.addEventListener('mousemove', (event) => {
+    mouseX = (event.clientX - windowHalfX);
+    mouseY = (event.clientY - windowHalfY);
+  });
 
-    draw() {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.alpha})`;
-      ctx.fill();
+  // Animation Loop
+  const clock = new THREE.Clock();
 
-      // Glow effect
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius * 3, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.alpha * 0.1})`;
-      ctx.fill();
-    }
+  function animate() {
+    requestAnimationFrame(animate);
+    const elapsedTime = clock.getElapsedTime();
+
+    // Rotate the entire particle field slowly
+    particleMesh.rotation.y = elapsedTime * 0.05;
+    particleMesh.rotation.x = elapsedTime * 0.02;
+
+    // Parallax effect based on mouse
+    targetX = mouseX * 0.001;
+    targetY = mouseY * 0.001;
+    
+    camera.position.x += (mouseX * 0.2 - camera.position.x) * 0.02;
+    camera.position.y += (-mouseY * 0.2 - camera.position.y) * 0.02;
+    camera.lookAt(scene.position);
+
+    renderer.render(scene, camera);
   }
 
-  function initParticles() {
-    particles = [];
-    const count = Math.min(PARTICLE_COUNT, Math.floor((canvas.width * canvas.height) / 15000));
-    for (let i = 0; i < count; i++) {
-      particles.push(new Particle());
-    }
-  }
+  animate();
 
-  function drawConnections() {
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < CONNECTION_DIST) {
-          const alpha = (1 - dist / CONNECTION_DIST) * 0.15;
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(96, 165, 250, ${alpha})`;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
-        }
-      }
-    }
-  }
-
-  function animateParticles() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles.forEach(p => {
-      p.update();
-      p.draw();
-    });
-    drawConnections();
-    requestAnimationFrame(animateParticles);
-  }
-
+  // Handle Resize
   window.addEventListener('resize', () => {
-    resizeCanvas();
-    initParticles();
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
   });
-
-  window.addEventListener('mousemove', (e) => {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-  });
-
-  window.addEventListener('mouseout', () => {
-    mouse.x = null;
-    mouse.y = null;
-  });
-
-  resizeCanvas();
-  initParticles();
-  animateParticles();
 
   // ==============================
   // 2. TYPING EFFECT
@@ -263,9 +230,9 @@
   // 6. TERMINAL TYPING ANIMATION
   // ==============================
   const terminalLines = [
-    { cmdEl: 't-line-1', outputEl: 't-output-1', text: 'techfusion --init --mode=competition', delay: 800 },
-    { cmdEl: 't-line-2', outputEl: 't-output-2', wrapEl: 't-line-2-wrap', text: 'techfusion status --all', delay: 600 },
-    { cmdEl: 't-line-3', outputEl: 't-output-3', wrapEl: 't-line-3-wrap', text: 'techfusion listen --participants', delay: 600 },
+    { cmdEl: 't-line-1', outputEl: 't-output-1', text: 'thinktobuild --init --mode=competition', delay: 800 },
+    { cmdEl: 't-line-2', outputEl: 't-output-2', wrapEl: 't-line-2-wrap', text: 'thinktobuild status --all', delay: 600 },
+    { cmdEl: 't-line-3', outputEl: 't-output-3', wrapEl: 't-line-3-wrap', text: 'thinktobuild listen --participants', delay: 600 },
   ];
 
   let terminalStarted = false;
@@ -332,24 +299,52 @@
   });
 
   // ==============================
-  // 8. CARD TILT EFFECT (subtle)
+  // 8. CARD TILT EFFECT (Fully Animated 3D)
   // ==============================
-  document.querySelectorAll('.nav-card').forEach(card => {
+  document.querySelectorAll('.nav-card, .feature-card').forEach(card => {
+    // Add glare element if not present
+    if(!card.querySelector('.card-glare')) {
+      const glare = document.createElement('div');
+      glare.className = 'card-glare';
+      card.appendChild(glare);
+    }
+
     card.addEventListener('mousemove', (e) => {
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      const rotateX = ((y - centerY) / centerY) * -3;
-      const rotateY = ((x - centerX) / centerX) * 3;
+      
+      // Professional subtle rotation (max ~6 degrees)
+      const rotateX = ((y - centerY) / centerY) * -6; 
+      const rotateY = ((x - centerX) / centerX) * 6;
 
-      card.querySelector('.card-content').style.transform =
-        `translateY(-6px) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      // Select inner content container (.card-content or the card itself if no content wrapper)
+      const content = card.querySelector('.card-content') || card;
+      
+      // Apply immediate transform tracking the mouse
+      content.style.transition = 'none';
+      content.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`;
+
+      // Move glare smoothly
+      const glare = card.querySelector('.card-glare');
+      if(glare) {
+        glare.style.transform = `translate(${x}px, ${y}px)`;
+        glare.style.opacity = '0.15'; // Subtle glare
+      }
     });
 
     card.addEventListener('mouseleave', () => {
-      card.querySelector('.card-content').style.transform = 'translateY(0) perspective(1000px) rotateX(0) rotateY(0)';
+      const content = card.querySelector('.card-content') || card;
+      // Smoothly return to original state
+      content.style.transition = 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+      content.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+      
+      const glare = card.querySelector('.card-glare');
+      if(glare) {
+        glare.style.opacity = '0';
+      }
     });
   });
 
