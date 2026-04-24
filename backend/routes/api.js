@@ -37,6 +37,16 @@ function generateTeamId() {
   return `TEAM-${randomNum}`;
 }
 
+function clampNumber(value, min, max, fallback = 0) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(min, Math.min(max, num));
+}
+
+function roundTo2(value) {
+  return Math.round(value * 100) / 100;
+}
+
 // Registration Status
 router.get('/registration-status', async (req, res) => {
   try {
@@ -319,12 +329,64 @@ router.get('/admin/teams', authenticateToken, authorizeRoles('admin', 'judge'), 
 // Admin Score Update
 router.post('/admin/score', authenticateToken, authorizeRoles('admin', 'judge'), async (req, res) => {
   try {
-    const { team_id, round2_score } = req.body;
-    const team = await Team.findOneAndUpdate({ team_id }, { round2_score: Number(round2_score) }, { returnDocument: 'after' });
+    const { team_id, round2_score, creativity, accuracy } = req.body;
+
+    if (!team_id) {
+      return res.status(400).json({ error: 'team_id is required.' });
+    }
+
+    const existingTeam = await Team.findOne({ team_id });
+    if (!existingTeam) {
+      return res.status(404).json({ error: 'Team not found.' });
+    }
+
+    const existingFallbackCriterion = clampNumber((existingTeam.round2_score || 0) / 2, 0, 50, 0);
+    const existingBreakdown = {
+      creativity: clampNumber(existingTeam.round2_breakdown?.creativity, 0, 50, existingFallbackCriterion),
+      accuracy: clampNumber(existingTeam.round2_breakdown?.accuracy, 0, 50, existingFallbackCriterion)
+    };
+
+    const hasRubricInput = [creativity, accuracy].some(value => value !== undefined);
+    let nextBreakdown = { ...existingBreakdown };
+
+    if (hasRubricInput) {
+      if (creativity !== undefined) {
+        nextBreakdown.creativity = clampNumber(creativity, 0, 50, existingBreakdown.creativity);
+      }
+      if (accuracy !== undefined) {
+        nextBreakdown.accuracy = clampNumber(accuracy, 0, 50, existingBreakdown.accuracy);
+      }
+    } else if (round2_score !== undefined) {
+      // Backward compatibility for old clients that still submit a single Round 2 score.
+      const normalizedRound2Score = clampNumber(round2_score, 0, 100, 0);
+      const criterionEquivalent = roundTo2(normalizedRound2Score / 2);
+      nextBreakdown = {
+        creativity: criterionEquivalent,
+        accuracy: criterionEquivalent
+      };
+    } else {
+      return res.status(400).json({ error: 'Provide rubric scores or round2_score.' });
+    }
+
+    const computedRound2Score = roundTo2(
+      nextBreakdown.creativity + nextBreakdown.accuracy
+    );
+
+    const updatedTeam = await Team.findOneAndUpdate(
+      { team_id },
+      {
+        $set: {
+          round2_breakdown: nextBreakdown,
+          round2_score: computedRound2Score
+        }
+      },
+      { returnDocument: 'after' }
+    );
+
     const io = req.app.get('io');
     if (io) io.emit('leaderboard_update');
 
-    res.json({ success: true, team });
+    res.json({ success: true, team: updatedTeam });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

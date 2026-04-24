@@ -7,6 +7,30 @@ const leaderboardBody = document.getElementById('leaderboard-body');
 let teamsData = [];
 let judgeToken = localStorage.getItem('techfusion_judge_token');
 
+function clampRubricScore(value, fallback = 0) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(0, Math.min(50, num));
+}
+
+function roundTo2(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function getRubricBreakdown(team) {
+  const baseFallback = clampRubricScore((Number(team.round2_score) || 0) / 2, 0);
+  const breakdown = team.round2_breakdown || {};
+
+  return {
+    creativity: clampRubricScore(breakdown.creativity, baseFallback),
+    accuracy: clampRubricScore(breakdown.accuracy, baseFallback)
+  };
+}
+
+function calculateRound2ScoreFromRubric(breakdown) {
+  return roundTo2(breakdown.creativity + breakdown.accuracy);
+}
+
 // Redirect to login if no token
 if (!judgeToken) {
   window.location.href = '/judge';
@@ -48,7 +72,7 @@ async function fetchLeaderboard() {
   } catch (err) {
     console.error('Failed to fetch leaderboard:', err);
     if (leaderboardBody) {
-      leaderboardBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#ef4444; padding: 40px;">
+      leaderboardBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#ef4444; padding: 40px;">
         <div style="font-size: 1.2rem; margin-bottom: 8px;">⚠️ Connection Error</div>
         <div>${err.message}</div>
         <button class="btn-judge btn-export" style="margin: 20px auto;" onclick="fetchLeaderboard()">Retry Connection</button>
@@ -65,13 +89,18 @@ function renderLeaderboard() {
 
   // Sort by final_total_score descending
   qualifiedTeams.sort((a, b) => {
-    const aTotal = a.best_score + a.round2_score;
-    const bTotal = b.best_score + b.round2_score;
+    const aRound2 = calculateRound2ScoreFromRubric(getRubricBreakdown(a));
+    const bRound2 = calculateRound2ScoreFromRubric(getRubricBreakdown(b));
+    const aTotal = a.best_score + aRound2;
+    const bTotal = b.best_score + bRound2;
     return bTotal - aTotal;
   });
 
   qualifiedTeams.forEach((team, index) => {
-    const totalScore = team.best_score + team.round2_score;
+    const rubric = getRubricBreakdown(team);
+    const round2Score = calculateRound2ScoreFromRubric(rubric);
+    const totalScore = team.best_score + round2Score;
+
     const tr = document.createElement('tr');
     tr.className = `team-row ${team.disqualified ? 'disqualified' : ''}`;
     
@@ -86,21 +115,32 @@ function renderLeaderboard() {
       <td>${team.best_score.toFixed(2)}</td>
       <td>
         <input type="number" 
-               class="score-input"
-               value="${team.round2_score}" 
-               min="0" max="100" 
-               onchange="updateRound2Score('${team.team_id}', this.value)"
+               class="score-input rubric-input"
+               id="rubric-creativity-${team.team_id}"
+               value="${rubric.creativity}" 
+               min="0" max="50" step="0.1"
+               onchange="updateRound2Rubric('${team.team_id}')"
                ${team.disqualified ? 'disabled' : ''}>
       </td>
-      <td><span class="final-score">${totalScore.toFixed(2)}</span></td>
+      <td>
+        <input type="number" 
+               class="score-input rubric-input"
+               id="rubric-accuracy-${team.team_id}"
+               value="${rubric.accuracy}" 
+               min="0" max="50" step="0.1"
+               onchange="updateRound2Rubric('${team.team_id}')"
+               ${team.disqualified ? 'disabled' : ''}>
+      </td>
+      <td><span class="final-score" id="round2-auto-${team.team_id}">${round2Score.toFixed(2)}</span></td>
+      <td><span class="final-score" id="final-total-${team.team_id}">${totalScore.toFixed(2)}</span></td>
       <td>
         <span class="badge ${team.disqualified ? 'badge-dq' : 'badge-active'}">
           ${team.disqualified ? 'DQ' : 'Active'}
         </span>
       </td>
       <td>
-        <button class="btn-judge btn-export" style="padding: 6px 12px; font-size: 0.75rem;" onclick="toggleSubmissions('${team.team_id}')">
-          View Submissions
+        <button class="btn-judge btn-export" style="padding: 6px 10px; font-size: 0.72rem;" onclick="toggleSubmissions('${team.team_id}')">
+          Submissions
         </button>
       </td>
     `;
@@ -110,7 +150,7 @@ function renderLeaderboard() {
     subTr.id = `sub-${team.team_id}`;
     subTr.style.display = 'none';
     
-    let subHtml = `<td colspan="8" class="submissions-drawer">
+    let subHtml = `<td colspan="10" class="submissions-drawer">
       <div class="submissions-flex">`;
     
     if (team.submissions.length === 0) {
@@ -153,7 +193,33 @@ function toggleSubmissions(teamId) {
   }
 }
 
-async function updateRound2Score(teamId, score) {
+async function updateRound2Rubric(teamId) {
+  const creativityInput = document.getElementById(`rubric-creativity-${teamId}`);
+  const accuracyInput = document.getElementById(`rubric-accuracy-${teamId}`);
+  const round2El = document.getElementById(`round2-auto-${teamId}`);
+  const finalTotalEl = document.getElementById(`final-total-${teamId}`);
+
+  if (!creativityInput || !accuracyInput) return;
+
+  const fallbackBreakdown = { creativity: 0, accuracy: 0 };
+  const team = teamsData.find((t) => t.team_id === teamId);
+  const previous = team ? getRubricBreakdown(team) : fallbackBreakdown;
+
+  const payload = {
+    team_id: teamId,
+    creativity: clampRubricScore(creativityInput.value, previous.creativity),
+    accuracy: clampRubricScore(accuracyInput.value, previous.accuracy)
+  };
+
+  creativityInput.value = String(payload.creativity);
+  accuracyInput.value = String(payload.accuracy);
+
+  const optimisticRound2 = calculateRound2ScoreFromRubric(payload);
+  if (round2El) round2El.textContent = optimisticRound2.toFixed(2);
+  if (finalTotalEl && team) {
+    finalTotalEl.textContent = (team.best_score + optimisticRound2).toFixed(2);
+  }
+
   try {
     const res = await fetch('/api/admin/score', {
       method: 'POST',
@@ -161,14 +227,32 @@ async function updateRound2Score(teamId, score) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${judgeToken}`
       },
-      body: JSON.stringify({ team_id: teamId, round2_score: score })
+      body: JSON.stringify(payload)
     });
     
     if (res.status === 401 || res.status === 403) {
       logout();
+      return;
     }
+
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to save rubric scores.');
+    }
+
+    const updatedTeamIndex = teamsData.findIndex((t) => t.team_id === teamId);
+    if (updatedTeamIndex !== -1) {
+      teamsData[updatedTeamIndex] = data.team;
+    }
+
+    renderLeaderboard();
   } catch (err) {
-    console.error('Failed to update score:', err);
+    console.error('Failed to update rubric score:', err);
+    fetchLeaderboard();
   }
 }
 

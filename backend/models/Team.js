@@ -17,6 +17,10 @@ const teamSchema = new mongoose.Schema({
   disqualified: { type: Boolean, default: false },
   submissions: [submissionSchema],
   best_score: { type: Number, default: 0 },
+  round2_breakdown: {
+    creativity: { type: Number, default: 0 },
+    accuracy: { type: Number, default: 0 }
+  },
   round2_score: { type: Number, default: 0 }
 });
 
