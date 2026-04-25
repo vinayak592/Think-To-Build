@@ -121,6 +121,24 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Get currently authenticated team (for dashboard sync)
+router.get('/team/me', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.team_id) {
+      return res.status(403).json({ error: 'Team token required.' });
+    }
+
+    const team = await Team.findOne({ team_id: req.user.team_id });
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found.' });
+    }
+
+    res.json({ success: true, team });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ===== ADMIN & JUDGE AUTH =====
 
 // Admin Login

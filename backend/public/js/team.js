@@ -1,5 +1,7 @@
 let currentTeam = null;
 let antiCheatIntervalId = null;
+let devToolsSignalCount = 0;
+let tabHiddenAt = null;
 const socket = io();
 
 // Real-time synchronization
@@ -14,11 +16,13 @@ socket.on('event_started', () => {
 socket.on('event_stopped', () => {
   eventStarted = false;
   updateReferenceVisibility();
-  lockInterface('EVENT_NOT_STARTED');
+  if (currentTeam && !currentTeam.disqualified && currentTeam.submissions.length < 3) {
+    lockInterface('EVENT_NOT_STARTED');
+  }
 });
 
 socket.on('leaderboard_update', () => {
-  if (typeof fetchLeaderboard === 'function') fetchLeaderboard();
+  syncCurrentTeamState();
 });
 
 // DOM Elements
@@ -75,7 +79,7 @@ function clearSession() {
   localStorage.removeItem('techfusion_token');
   localStorage.removeItem('techfusion_team_id');
   currentTeam = null;
-  loginContainer.style.display = 'block';
+  loginContainer.style.display = 'flex';
   dashboardContainer.style.display = 'none';
 }
 
@@ -152,6 +156,39 @@ async function checkEventStatus() {
   }
 }
 
+async function syncCurrentTeamState() {
+  if (!currentTeam) return;
+
+  const token = localStorage.getItem('techfusion_token');
+  if (!token) {
+    clearSession();
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/team/me', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      clearSession();
+      return;
+    }
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.success || !data.team) return;
+
+    currentTeam = data.team;
+    updateUI();
+  } catch (err) {
+    console.error('Failed to sync team state');
+  }
+}
+
 function unlockInterface() {
   if (!currentTeam || currentTeam.disqualified || currentTeam.submissions.length >= 3) return;
   promptInput.disabled = false;
@@ -200,7 +237,7 @@ function lockInterface(reason) {
       const banner = document.createElement('div');
       banner.id = 'event-wait-banner';
       banner.style.cssText = 'background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; padding: 16px; border-radius: 8px; text-align: center; font-weight: 600; margin-bottom: 20px; animation: pulse 2s infinite;';
-      banner.innerHTML = '⏳ Event has not started yet. Please wait for the admin to begin the competition.';
+      banner.innerHTML = '[Pending] Event has not started yet. Please wait for the admin to begin the competition.';
       const mainLayout = document.getElementById('main-layout');
       if (mainLayout) mainLayout.parentNode.insertBefore(banner, mainLayout);
     }
@@ -268,12 +305,14 @@ function setupTabSwitchDetection() {
 
   const handleVisibilityChange = () => {
     if (document.hidden || document.visibilityState === 'hidden') {
+      tabHiddenAt = Date.now();
+      return;
+    }
+
+    if (tabHiddenAt && Date.now() - tabHiddenAt > 1500) {
       triggerDisqualification('Page hidden or tab switched');
     }
-  };
-
-  const handleBlur = () => {
-    triggerDisqualification('Window lost focus');
+    tabHiddenAt = null;
   };
 
   const handleBlockedKeys = (event) => {
@@ -294,7 +333,6 @@ function setupTabSwitchDetection() {
   };
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  window.addEventListener('blur', handleBlur);
   document.addEventListener('keydown', handleBlockedKeys);
   document.addEventListener('contextmenu', handleContextMenu);
 
@@ -303,11 +341,16 @@ function setupTabSwitchDetection() {
 
     const widthGap = Math.abs(window.outerWidth - window.innerWidth);
     const heightGap = Math.abs(window.outerHeight - window.innerHeight);
-    const devtoolsOpen = widthGap > 160 || heightGap > 160;
+    const devtoolsOpen = widthGap > 220 || heightGap > 220;
 
     if (devtoolsOpen) {
-      triggerDisqualification('DevTools panel detected');
+      devToolsSignalCount += 1;
+      if (devToolsSignalCount >= 3) {
+        triggerDisqualification('DevTools panel detected');
+      }
+      return;
     }
+    devToolsSignalCount = 0;
   }, 1000);
 }
 
@@ -335,24 +378,3 @@ async function triggerDisqualification(reason = 'Anti-cheat rule triggered') {
   }
 }
 
-// Listen for global disqualification sync
-socket.on('leaderboard_update', async () => {
-  // Can be used to sync admin disqualifications
-});
-
-// Listen for event state changes
-socket.on('event_started', () => {
-  eventStarted = true;
-  updateReferenceVisibility();
-  if (currentTeam && !currentTeam.disqualified && currentTeam.submissions.length < 3) {
-    unlockInterface();
-  }
-});
-
-socket.on('event_stopped', () => {
-  eventStarted = false;
-  updateReferenceVisibility();
-  if (currentTeam && !currentTeam.disqualified && currentTeam.submissions.length < 3) {
-    lockInterface('EVENT_NOT_STARTED');
-  }
-});
