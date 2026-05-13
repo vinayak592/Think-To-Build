@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Think to Build | Admin Panel</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    .admin-login-card {
+      max-width: 440px;
+      margin: 80px auto;
+      text-align: center;
+    }
+    .admin-login-card .role-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      margin-bottom: 16px;
+    }
+    .form-group {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .form-group input {
+      width: 100%;
+    }
+    .error-msg {
+      color: var(--danger);
+      text-align: center;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    /* Admin Dashboard (after login) */
+    .admin-dashboard {
+      max-width: 900px;
+      margin: 40px auto;
+      display: none;
+    }
+    .event-control-card {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .event-status {
+      font-size: 1.1rem;
+      margin: 20px 0;
+      padding: 16px;
+      border-radius: 8px;
+    }
+    .event-status.stopped {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+    .event-status.started {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
+    .event-btn-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .btn-start {
+      background: linear-gradient(135deg, #10b981, #059669);
+      padding: 14px 40px;
+      font-size: 1.1rem;
+    }
+    .btn-start:hover {
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+    }
+    .btn-stop {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      padding: 14px 40px;
+      font-size: 1.1rem;
+    }
+    .btn-stop:hover {
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+    }
+    .btn-view-leaderboard {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      margin-top: 16px;
+    }
+    .admin-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .admin-info .admin-name {
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      font-size: 0.85rem;
+    }
+    .pulse-dot-live {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #10b981;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+    .pulse-dot-off {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #ef4444;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Card -->
+  <div class="container" id="login-section">
+    <div class="glass-card admin-login-card" id="admin-login-card">
+      <span class="role-badge">🔒 Admin Access</span>
+      <h1>Admin Login</h1>
+      <p style="margin-bottom: 24px;">Enter your admin credentials to manage the event.</p>
+
+      <div id="error-msg" class="error-msg"></div>
+
+      <form id="admin-login-form" style="display: flex; flex-direction: column; gap: 4px;">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="admin-email" placeholder="admin@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="text" id="admin-password" placeholder="Enter password" required>
+        </div>
+        <button type="submit" style="width: 100%; margin-top: 12px;">Login as Admin</button>
+      </form>
+
+      <p style="text-align: center; margin-top: 20px; font-size: 0.85rem;">
+        <a href="/" style="color: var(--primary);">← Back to Home</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard (after login) -->
+  <div class="container admin-dashboard" id="admin-dashboard">
+    <div class="admin-info">
+      <div>
+        <h1 style="font-size: 1.8rem;">Admin Panel</h1>
+        <p>Logged in as <span class="admin-name" id="admin-email-display">admin</span></p>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Event Control -->
+    <div class="glass-card event-control-card">
+      <h2 style="margin-bottom: 8px;">Event Control</h2>
+      <p style="color: var(--text-muted);">Manage the AI Image Generation competition</p>
+
+      <div class="event-status stopped" id="event-status-display">
+        <span class="pulse-dot-off" id="status-dot"></span>
+        <strong id="status-text">Event is NOT started</strong>
+      </div>
+
+      <div class="event-btn-group">
+        <button class="btn-start" id="btn-start-event" onclick="startEvent()">
+          ▶ Start Event
+        </button>
+        <button class="btn-stop" id="btn-stop-event" onclick="stopEvent()" style="display: none;">
+          ⏹ Stop Event
+        </button>
+      </div>
+    </div>
+
+    <!-- Target Image Upload -->
+    <div class="glass-card" style="margin-bottom: 30px; text-align: center;">
+      <h2 style="margin-bottom: 8px;">Target Image</h2>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">Upload the reference image that teams will try to match</p>
+      <div style="margin-bottom: 20px;">
+        <img id="target-preview" src="/uploads/reference/reference.jpg" alt="Target" style="max-width: 300px; max-height: 300px; border-radius: 12px; border: 1px solid var(--border); object-fit: cover;" onerror="this.style.display='none'">
+      </div>
+      <input type="file" id="target-file-input" accept="image/*" style="display: none;">
+      <button class="btn-start" style="background: linear-gradient(135deg, #60a5fa, #3b82f6);" onclick="document.getElementById('target-file-input').click()">
+        📷 Upload Target Image
+      </button>
+      <p id="target-upload-status" style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);"></p>
+    </div>
+
+    <!-- Leaderboard below -->
+    <div class="glass-card">
+      <div class="controls">
+        <button onclick="window.open('/api/admin', '_blank')" class="btn-view-leaderboard">Open Judge Leaderboard →</button>
+      </div>
+
+      <h3 style="margin-bottom: 16px;">Quick Leaderboard Preview</h3>
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Team</th>
+            <th>Images</th>
+            <th>Round 1 Score</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let adminToken = localStorage.getItem('techfusion_admin_token');
+
+    // Real-time synchronization
+    socket.on('event_started', () => updateStatusUI(true));
+    socket.on('event_stopped', () => updateStatusUI(false));
+    socket.on('leaderboard_update', () => fetchLeaderboard());
+
+    // Check if already logged in
+    if (adminToken) {
+      showDashboard();
+    }
+
+    // Login Form
+    document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-password').value.trim();
+      const errorEl = document.getElementById('error-msg');
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem('techfusion_admin_token', data.token);
+          localStorage.setItem('techfusion_admin_email', email);
+          adminToken = data.token;
+          showDashboard();
+        } else {
+          errorEl.textContent = data.error || 'Login failed.';
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = 'Network error. Try again.';
+        errorEl.style.display = 'block';
+      }
+    });
+
+    function showDashboard() {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('admin-dashboard').style.display = 'block';
+      document.getElementById('admin-email-display').textContent =
+        localStorage.getItem('techfusion_admin_email') || 'admin';
+      fetchEventStatus();
+      fetchLeaderboard();
+    }
+
+    function logout() {
+      localStorage.removeItem('techfusion_admin_token');
+      localStorage.removeItem('techfusion_admin_email');
+      adminToken = null;
+      document.getElementById('login-section').style.display = 'block';
+      document.getElementById('admin-dashboard').style.display = 'none';
+    }
+
+    // Event Status
+    async function fetchEventStatus() {
+      try {
+        const res = await fetch('/api/event/status');
+        const data = await res.json();
+        updateStatusUI(data.event_started);
+      } catch (err) {
+        console.error('Failed to fetch event status');
+      }
+    }
+
+    function updateStatusUI(started) {
+      const statusDisplay = document.getElementById('event-status-display');
+      const statusDot = document.getElementById('status-dot');
+      const statusText = document.getElementById('status-text');
+      const btnStart = document.getElementById('btn-start-event');
+      const btnStop = document.getElementById('btn-stop-event');
+
+      if (started) {
+        statusDisplay.className = 'event-status started';
+        statusDot.className = 'pulse-dot-live';
+        statusText.textContent = 'Event is LIVE — Teams can submit!';
+        btnStart.style.display = 'none';
+        btnStop.style.display = 'inline-block';
+      } else {
+        statusDisplay.className = 'event-status stopped';
+        statusDot.className = 'pulse-dot-off';
+        statusText.textContent = 'Event is NOT started';
+        btnStart.style.display = 'inline-block';
+        btnStop.style.display = 'none';
+      }
+    }
+
+    async function startEvent() {
+      const token = localStorage.getItem('techfusion_admin_token');
+      try {
+        const res = await fetch('/api/event/start', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          alert('Session expired. Please login again.');
+          return logout();
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          updateStatusUI(true);
+        } else {
+          alert(data.error || 'Failed to start event.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error.');
+      }
+    }
+
+    async function stopEvent() {
+      if (!confirm('Are you sure you want to STOP the event? Teams will not be able to submit.')) return;
+      const token = localStorage.getItem('techfusion_admin_token');
+      try {
+        const res = await fetch('/api/event/stop', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          alert('Session expired. Please login again.');
+          return logout();
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          updateStatusUI(false);
+        } else {
+          alert(data.error || 'Failed to stop event.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error.');
+      }
+    }
+
+    // Target image upload handler
+    document.getElementById('target-file-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById('target-upload-status');
+      statusEl.textContent = 'Uploading...';
+      statusEl.style.color = '#60a5fa';
+
+      const formData = new FormData();
+      formData.append('target', file);
+
+      try {
+        const res = await fetch('/api/admin/upload-target', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${adminToken}` },
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusEl.textContent = '✅ Target image uploaded successfully!';
+          statusEl.style.color = '#10b981';
+          const preview = document.getElementById('target-preview');
+          preview.src = '/uploads/reference/reference.jpg?' + Date.now();
+          preview.style.display = 'block';
+        } else {
+          statusEl.textContent = '❌ ' + (data.error || 'Upload failed');
+          statusEl.style.color = '#ef4444';
+        }
+      } catch (err) {
+        statusEl.textContent = '❌ Network error';
+        statusEl.style.color = '#ef4444';
+      }
+    });
+
+    // Quick Leaderboard
+    async function fetchLeaderboard() {
+      if (!adminToken) return;
+      try {
+        const res = await fetch('/api/admin/teams', {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+
+        if (res.status === 401 || res.status === 403) return logout();
+
+        const teams = await res.json();
+        const body = document.getElementById('leaderboard-body');
+        body.innerHTML = '';
+
+        teams.sort((a, b) => {
+          if (a.disqualified && !b.disqualified) return 1;
+          if (!a.disqualified && b.disqualified) return -1;
+          return (b.round1_score || 0) - (a.round1_score || 0);
+        });
+
+        teams.forEach((team, i) => {
+          const tr = document.createElement('tr');
+          tr.className = team.disqualified ? 'team-row disqualified' : 'team-row';
+          tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td><strong>${team.team_id}</strong><br><span style="font-size:0.75rem;color:var(--text-muted);">${team.participant_name || ''} (${team.team_name || ''})</span></td>
+            <td>${(team.round1_images || []).length} / 3</td>
+            <td>${(team.round1_score || 0).toFixed(2)}</td>
+            <td><span class="badge ${team.disqualified ? 'badge-dq' : 'badge-active'}">${team.disqualified ? 'DQ' : 'Active'}</span></td>
+            <td>
+              ${team.disqualified ? 
+                `<button class="btn btn-success btn-sm" onclick="clearDisqualification('${team.team_id}')">Clear DQ</button>` :
+                `<button class="btn btn-warning btn-sm" onclick="disqualifyTeam('${team.team_id}')">Disqualify</button>`
+              }
+            </td>
+          `;
+          body.appendChild(tr);
+        });
+      } catch (err) {
+        console.error('Leaderboard fetch failed');
+      }
+    }
+
+    // Disqualification management
+    async function disqualifyTeam(teamId) {
+      if (!confirm(`Are you sure you want to disqualify team ${teamId}? This action cannot be undone.`)) return;
+      
+      const token = localStorage.getItem('techfusion_admin_token');
+      try {
+        const res = await fetch('/api/disqualify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ team_id: teamId })
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          alert('Session expired. Please login again.');
+          return logout();
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          alert(`Team ${teamId} has been disqualified.`);
+          loadLeaderboard(); // Refresh leaderboard
+        } else {
+          alert(data.error || 'Failed to disqualify team.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error.');
+      }
+    }
+
+    async function clearDisqualification(teamId) {
+      if (!confirm(`Are you sure you want to clear disqualification for team ${teamId}? This will allow them to use their upload attempts.`)) return;
+      
+      const token = localStorage.getItem('techfusion_admin_token');
+      try {
+        const res = await fetch('/api/admin/clear-disqualification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ team_id: teamId })
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          alert('Session expired. Please login again.');
+          return logout();
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          alert(`Disqualification cleared for team ${teamId}. They can now use their 3 upload attempts.`);
+          loadLeaderboard(); // Refresh leaderboard
+        } else {
+          alert(data.error || 'Failed to clear disqualification.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error.');
+      }
+    }
+
+  </script>
+
+</body>
+</html>
