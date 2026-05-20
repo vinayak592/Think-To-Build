@@ -465,11 +465,10 @@ router.post('/upload-images', authenticateToken, (req, res) => {
         results.push(imageEntry);
       }
 
-      // Compute Round 1 score: average of all image scores
+      // Compute Round 1 score: best (max) of all image scores
       const allScores = team.round1_images.map(img => Number(img.score) || 0);
-      const sumScore = allScores.reduce((sum, value) => sum + value, 0);
-      const averageScore = allScores.length > 0 ? sumScore / allScores.length : 0;
-      team.round1_score = roundTo2(averageScore);
+      const bestScore = allScores.length > 0 ? Math.max(...allScores) : 0;
+      team.round1_score = roundTo2(bestScore);
 
       // Also update best_score for backward compat
       team.best_score = team.round1_score;
@@ -609,6 +608,32 @@ router.post('/admin/score', authenticateToken, authorizeRoles('admin', 'judge'),
     if (io) io.emit('leaderboard_update');
 
     res.json({ success: true, team: updatedTeam });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== TEAM DETAILS & IMAGES =====
+
+// Show team registration details
+router.get('/team/:team_id/registration', async (req, res) => {
+  try {
+    const team = await Team.findOne({ team_id: req.params.team_id })
+      .select('team_id team_name participant_name email round1_score disqualified warnings upload_attempts_used');
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    res.json({ success: true, team });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Show the 3 images uploaded by a team
+router.get('/team/:team_id/images', async (req, res) => {
+  try {
+    const team = await Team.findOne({ team_id: req.params.team_id })
+      .select('round1_images');
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    res.json({ success: true, images: team.round1_images });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

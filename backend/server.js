@@ -25,9 +25,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const apiRoutes = require('./routes/api');
 app.use('/api', apiRoutes);
 
-// Main landing page (hub)
+// Main landing page (registration hub)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/main.html'));
+});
+
+// Portals page (dashboards)
+app.get('/portals', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/portals.html'));
 });
 
 // Team dashboard (competition page)
