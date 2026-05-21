@@ -59,13 +59,16 @@
         </p>
         <div class="hero-actions">
           <a href="/register" class="btn btn-primary" id="btn-join">
-            <span class="btn-text">Join The Arena</span>
-            <span class="btn-icon">→</span>
+            <span class="btn-text" id="btn-join-text">Join The Arena</span>
+            <span class="btn-icon" id="btn-join-icon">→</span>
             <span class="btn-shine"></span>
           </a>
           <a href="#explore" class="btn btn-ghost" id="btn-explore">
             <span class="btn-text">Explore Modules</span>
           </a>
+        </div>
+        <div id="reg-closed-banner" style="display:none; margin-top: 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 12px 20px; color: #ef4444; font-size: 0.88rem; letter-spacing: 0.5px;">
+          ⛔ Registration is <strong>CLOSED</strong> — All <span id="reg-banner-count">50</span>/50 slots filled.
         </div>
         <div class="hero-stats">
           <div class="stat-item">
@@ -183,7 +186,7 @@
             <h3 class="card-title">Registration</h3>
             <p class="card-desc">Register your team and get your unique Team ID to enter the competition arena.</p>
             <div class="card-footer">
-              <span class="card-tag">Open</span>
+              <span class="card-tag" id="reg-card-tag">Open</span>
               <span class="card-arrow">→</span>
             </div>
           </div>
@@ -250,6 +253,64 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script>
+    // Check registration status on page load and update UI accordingly
+    (async function checkRegStatus() {
+      try {
+        const res = await fetch('/api/registration-status');
+        const data = await res.json();
+        if (!data.open) {
+          // Disable the hero Join button
+          const btn = document.getElementById('btn-join');
+          if (btn) {
+            btn.removeAttribute('href');
+            btn.style.opacity = '0.45';
+            btn.style.cursor = 'not-allowed';
+            btn.style.pointerEvents = 'none';
+            const btnText = document.getElementById('btn-join-text');
+            if (btnText) btnText.textContent = 'Registration Closed';
+            const btnIcon = document.getElementById('btn-join-icon');
+            if (btnIcon) btnIcon.textContent = '⛔';
+          }
+          // Show the red banner with live count
+          const banner = document.getElementById('reg-closed-banner');
+          if (banner) {
+            const countEl = document.getElementById('reg-banner-count');
+            if (countEl && data.teamCount) countEl.textContent = data.teamCount;
+            banner.style.display = 'block';
+          }
+          // Update nav CTA link
+          const navCta = document.querySelector('.nav-cta');
+          if (navCta) {
+            navCta.removeAttribute('href');
+            navCta.textContent = 'Reg. Closed';
+            navCta.style.opacity = '0.5';
+            navCta.style.cursor = 'not-allowed';
+            navCta.style.pointerEvents = 'none';
+          }
+          // Update the registration card tag to show Closed
+          const regTag = document.getElementById('reg-card-tag');
+          if (regTag) {
+            regTag.textContent = 'Closed';
+            regTag.style.background = 'rgba(239,68,68,0.15)';
+            regTag.style.color = '#ef4444';
+            regTag.style.borderColor = 'rgba(239,68,68,0.3)';
+          }
+          // Make the registration card non-clickable
+          const regCard = document.getElementById('card-register');
+          if (regCard) {
+            regCard.removeAttribute('href');
+            regCard.style.opacity = '0.6';
+            regCard.style.cursor = 'not-allowed';
+            regCard.style.pointerEvents = 'none';
+          }
+        }
+      } catch (err) {
+        // Silently fail — do not block the page
+        console.warn('Could not check registration status:', err);
+      }
+    })();
+  </script>
   <script src="main.js"></script>
 </body>
 </html>

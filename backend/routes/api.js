@@ -106,9 +106,15 @@ function roundTo2(value) {
 // Registration Status
 router.get('/registration-status', async (req, res) => {
   try {
+    const MAX_TEAMS = 50;
     const teamCount = await Team.countDocuments();
-    const isOpen = teamCount < 50;
-    res.json({ open: isOpen, message: isOpen ? '' : 'Registration is closed. Maximum 50 teams allowed.' });
+    const isOpen = teamCount < MAX_TEAMS;
+    res.json({
+      open: isOpen,
+      teamCount,
+      maxTeams: MAX_TEAMS,
+      message: isOpen ? '' : 'Registration is closed. Maximum 50 teams allowed.'
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

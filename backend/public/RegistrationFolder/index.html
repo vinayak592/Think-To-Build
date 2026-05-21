@@ -115,7 +115,8 @@
         </svg>
       </div>
       <h1 style="font-family: 'Orbitron'; font-size: 1.8rem; margin-bottom: 8px; color: #ef4444;">REGISTRATION CLOSED</h1>
-      <p style="color: #8892b0; margin-bottom: 32px;">Maximum number of teams (50) has been reached. Registration is no longer available.</p>
+      <p style="color: #8892b0; margin-bottom: 16px;">All <strong id="closed-team-count" style="color:#ef4444;">50</strong>/50 slots have been filled. Registration is no longer available.</p>
+      <p style="color: #8892b0; font-size: 0.85rem; margin-bottom: 32px;">If you've already registered, use your Team ID to login at the dashboard.</p>
       <a href="/" class="btn btn-primary" style="display: block; text-decoration: none;">
         <span class="btn-text">RETURN TO HUB</span>
       </a>
@@ -199,6 +200,9 @@
         if (!data.open) {
           document.getElementById('registration-form-card').style.display = 'none';
           document.getElementById('registration-closed').style.display = 'block';
+          // Update the live count in the closed panel
+          const countEl = document.getElementById('closed-team-count');
+          if (countEl && data.teamCount) countEl.textContent = data.teamCount;
         }
       } catch (err) {
         console.error('Failed to check registration status:', err);
