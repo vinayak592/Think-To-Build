@@ -123,7 +123,7 @@ router.post('/register', async (req, res) => {
     }
 
     const { email, team_name, participant_name, member_count, members } = req.body;
-    
+
     if (!email || !team_name || !participant_name) {
       return res.status(400).json({ error: 'Email, Team Name, and Participant Name are required.' });
     }
@@ -254,10 +254,10 @@ router.post('/event/start', authenticateToken, async (req, res) => {
   try {
     const state = await EventState.findOneAndUpdate(
       { key: 'main' },
-      { 
-        event_started: true, 
+      {
+        event_started: true,
         started_at: new Date(),
-        started_by: req.user.email 
+        started_by: req.user.email
       },
       { upsert: true, returnDocument: 'after' }
     );
@@ -296,19 +296,19 @@ router.post('/event/stop', authenticateToken, async (req, res) => {
 // Warn and Disqualify on 3rd warning after max uploads used
 router.post('/warn', authenticateToken, async (req, res) => {
   try {
-    const team_id = req.user.team_id; 
+    const team_id = req.user.team_id;
     const team = await Team.findOne({ team_id });
     if (!team) return res.status(404).json({ error: 'Team not found' });
-    
+
     // Increment warnings
     team.warnings = (team.warnings || 0) + 1;
-    
+
     // Disqualify if 3 or more warnings and max upload attempts used
     if (team.warnings >= 3 && team.upload_attempts_used >= team.max_upload_attempts) {
       team.disqualified = true;
     }
     await team.save();
-    
+
     const io = req.app.get('io');
     if (io) io.emit('leaderboard_update');
 
@@ -323,14 +323,14 @@ router.post('/opt-out', authenticateToken, async (req, res) => {
   try {
     const team_id = req.user.team_id;
     const team = await Team.findOneAndUpdate(
-      { team_id }, 
-      { 
-        opted_out: true, 
-        opt_out_timestamp: new Date() 
-      }, 
+      { team_id },
+      {
+        opted_out: true,
+        opt_out_timestamp: new Date()
+      },
       { returnDocument: 'after' }
     );
-    
+
     const io = req.app.get('io');
     if (io) io.emit('leaderboard_update');
 
@@ -349,15 +349,15 @@ router.post('/admin/clear-disqualification', authenticateToken, authorizeRoles('
     }
 
     const team = await Team.findOneAndUpdate(
-      { team_id }, 
-      { disqualified: false }, 
+      { team_id },
+      { disqualified: false },
       { returnDocument: 'after' }
     );
-    
+
     if (!team) {
       return res.status(404).json({ error: 'Team not found.' });
     }
-    
+
     const io = req.app.get('io');
     if (io) io.emit('leaderboard_update');
 
@@ -431,7 +431,7 @@ router.post('/upload-images', authenticateToken, (req, res) => {
       // Remove extra files if more were uploaded
       if (req.files.length > remainingSlots) {
         req.files.slice(remainingSlots).forEach(f => {
-          try { fs.unlinkSync(f.path); } catch(e) {}
+          try { fs.unlinkSync(f.path); } catch (e) { }
         });
       }
 
@@ -439,7 +439,7 @@ router.post('/upload-images', authenticateToken, (req, res) => {
       const targetImagePath = path.join(__dirname, '../uploads/reference/reference.jpg');
       if (!fs.existsSync(targetImagePath)) {
         filesToProcess.forEach(f => {
-          try { fs.unlinkSync(f.path); } catch(e) {}
+          try { fs.unlinkSync(f.path); } catch (e) { }
         });
         throw new Error('Target image not found. Please contact admin.');
       }

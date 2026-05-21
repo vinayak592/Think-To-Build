@@ -35,9 +35,16 @@ def compute_similarity(image1: Image.Image, image2: Image.Image) -> float:
     # Cosine similarity between the two normalized vectors
     similarity = torch.dot(image_features[0], image_features[1]).item()
 
-    # Normalize to 0-100 scale (direct percentage of cosine similarity)
-    # The original implementation did similarity * 100
-    score = max(0.0, min(100.0, similarity * 100.0))
+    # CLIP embeddings typically have a baseline cosine similarity around 0.20-0.25 for completely unrelated images.
+    # We apply Min-Max scaling to stretch the score so completely unrelated images score 0.
+    min_sim = 0.22
+    max_sim = 1.0
+    
+    # Scale from 0.0 to 1.0
+    scaled_similarity = (similarity - min_sim) / (max_sim - min_sim)
+
+    # Convert to percentage and clamp between 0 and 100
+    score = max(0.0, min(100.0, scaled_similarity * 100.0))
     return round(score, 2)
 
 
@@ -101,4 +108,7 @@ async def evaluate_legacy(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=5000)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    host = "0.0.0.0" if "PORT" in os.environ else os.environ.get("HOST", "127.0.0.1")
+    uvicorn.run(app, host=host, port=port)

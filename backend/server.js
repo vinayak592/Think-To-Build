@@ -77,14 +77,18 @@ io.on('connection', (socket) => {
   });
 });
 
-// MongoDB Connection
+// Start Server Immediately (Required for Railway/Heroku port binding)
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port http://localhost:${PORT}`);
+});
+
+// MongoDB Connection (Asynchronous)
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/thinktobuild')
   .then(() => {
     console.log('Connected to MongoDB');
-    const PORT = process.env.PORT || 3000;
-    server.listen(PORT, () => {
-      console.log(`Server running on port http://localhost:${PORT}`);
-    });
   })
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+  });
 

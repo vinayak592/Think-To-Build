@@ -2,16 +2,12 @@
   "name": "think-to-build-root",
   "version": "1.0.0",
   "scripts": {
-    "install": "cd backend && npm install",
-    "build": "cd backend && npm install",
-    "start": "cd backend && node server.js"
+    "install": "npm install --prefix backend",
+    "build": "npm install --prefix backend",
+    "heroku-postbuild": "npm install --prefix backend",
+    "start": "node backend/server.js"
   },
   "engines": {
     "node": ">=18.x"
-  },
-  "dependencies": {
-    "express": "^5.2.1",
-    "node": "^26.1.0",
-    "nodemon": "^3.1.14"
   }
 }
