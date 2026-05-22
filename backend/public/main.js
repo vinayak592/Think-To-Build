@@ -179,15 +179,34 @@
     requestAnimationFrame(update);
   }
 
-  // Trigger counters when hero is visible
+  // Fetch live team count, then trigger counters when hero is visible
   let countersTriggered = false;
+  let liveTeamCount = 50; // default fallback
+
+  // Pre-fetch team count so it's ready when the section scrolls into view
+  fetch('/api/registration-status')
+    .then(r => r.json())
+    .then(data => {
+      if (typeof data.teamCount === 'number') {
+        liveTeamCount = data.teamCount;
+        // If stats section already visible before fetch completed, update immediately
+        const el = document.getElementById('stat-teams');
+        if (el && countersTriggered) {
+          el.textContent = liveTeamCount;
+        }
+      }
+    })
+    .catch(() => { /* silently use fallback */ });
+
   const heroObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting && !countersTriggered) {
         countersTriggered = true;
-        animateCounter(document.getElementById('stat-teams'), 50, 2000, '+');
+        // Teams: live count from API (e.g. 23 out of 50)
+        animateCounter(document.getElementById('stat-teams'), liveTeamCount, 2000, '');
+        // Challenges & Prizes: static values
         animateCounter(document.getElementById('stat-challenges'), 5, 1500);
-        animateCounter(document.getElementById('stat-prizes'), 10, 1800, 'K');
+        animateCounter(document.getElementById('stat-prizes'), 3, 1800, 'K');
       }
     });
   }, { threshold: 0.5 });
