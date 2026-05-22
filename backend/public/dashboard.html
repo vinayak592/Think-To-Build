@@ -88,6 +88,19 @@
     <div class="main-grid" id="main-layout">
       <!-- Upload Panel -->
       <div class="glass-card upload-card">
+        <section class="event-countdown event-countdown-dashboard" data-countdown-target="2026-06-05T00:00:00" aria-label="Countdown to June 5, 2026">
+          <div class="event-countdown-copy">
+            <span class="countdown-kicker">// EVENT COUNTDOWN</span>
+            <strong>June 5 begins in</strong>
+          </div>
+          <div class="countdown-clock" role="timer" aria-live="polite">
+            <div class="countdown-unit"><span data-countdown-value="days">00</span><small>Days</small></div>
+            <div class="countdown-unit"><span data-countdown-value="hours">00</span><small>Hours</small></div>
+            <div class="countdown-unit"><span data-countdown-value="minutes">00</span><small>Minutes</small></div>
+            <div class="countdown-unit"><span data-countdown-value="seconds">00</span><small>Seconds</small></div>
+          </div>
+        </section>
+
         <div class="stats-row">
           <div class="stat-box"><span class="stat-val" id="image-counter">0 / 3</span><span class="stat-label">Images Uploaded</span></div>
           <div class="stat-box"><span class="stat-val" id="attempts-counter">3 / 3</span><span class="stat-label">Upload Attempts</span></div>
@@ -136,6 +149,7 @@
       loop();
     })();
   </script>
+  <script src="/js/countdown.js"></script>
   <script src="/js/team.js"></script>
 </body>
 </html>

@@ -80,9 +80,10 @@
           style="display:none; margin-top: 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 12px 20px; color: #ef4444; font-size: 0.88rem; letter-spacing: 0.5px;">
           ⛔ Registration is <strong>CLOSED</strong> — All <span id="reg-banner-count">50</span>/50 slots filled.
         </div>
+
         <div class="hero-stats">
           <div class="stat-item">
-            <span class="stat-number" id="stat-teams">50</span>
+            <span class="stat-number" id="stat-teams">0</span>
             <span class="stat-label">Teams</span>
           </div>
           <div class="stat-divider"></div>
@@ -92,10 +93,22 @@
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <span class="stat-number" id="stat-prizes">3k</span>
+            <span class="stat-number" id="stat-prizes">0</span>
             <span class="stat-label">Prizes</span>
           </div>
         </div>
+        <section class="event-countdown event-countdown-hero" data-countdown-target="2026-06-05T00:00:00" aria-label="Countdown to June 5, 2026">
+          <div class="event-countdown-copy">
+            <span class="countdown-kicker">// EVENT COUNTDOWN</span>
+            <strong>June 5 begins in</strong>
+          </div>
+          <div class="countdown-clock" role="timer" aria-live="polite">
+            <div class="countdown-unit"><span data-countdown-value="days">00</span><small>Days</small></div>
+            <div class="countdown-unit"><span data-countdown-value="hours">00</span><small>Hours</small></div>
+            <div class="countdown-unit"><span data-countdown-value="minutes">00</span><small>Minutes</small></div>
+            <div class="countdown-unit"><span data-countdown-value="seconds">00</span><small>Seconds</small></div>
+          </div>
+        </section>
       </div>
 
       <!-- Hero Visual -->
@@ -331,6 +344,7 @@
       }
     })();
   </script>
+  <script src="/js/countdown.js"></script>
   <script src="main.js"></script>
 </body>
 

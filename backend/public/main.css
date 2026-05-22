@@ -382,6 +382,160 @@ a {
   animation: fadeInUp 0.8s ease-out 1.6s both;
 }
 
+.event-countdown {
+  width: min(100%, 560px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: 30px;
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  border-radius: 16px;
+  background:
+    linear-gradient(120deg, rgba(34, 211, 238, 0.09), transparent 38%, rgba(244, 114, 182, 0.07)),
+    rgba(10, 17, 40, 0.82);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+    0 18px 42px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(18px);
+  animation: fadeInUp 0.8s ease-out 1.7s both;
+}
+
+.event-countdown::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(34, 211, 238, 0.95), rgba(96, 165, 250, 0.12), rgba(244, 114, 182, 0.72)) top left / 100% 1px no-repeat,
+    radial-gradient(circle at 0% 0%, rgba(34, 211, 238, 0.16), transparent 34%),
+    radial-gradient(circle at 100% 100%, rgba(244, 114, 182, 0.1), transparent 28%);
+}
+
+.event-countdown-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.countdown-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--cyan-400);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 3px;
+  white-space: nowrap;
+}
+
+.countdown-kicker::after {
+  content: '';
+  width: 36px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.72), transparent);
+}
+
+.event-countdown-copy strong {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 1px;
+}
+
+.countdown-clock {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.countdown-unit {
+  min-width: 0;
+  min-height: 92px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border: 1px solid rgba(96, 165, 250, 0.17);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(13, 26, 58, 0.78), rgba(5, 10, 24, 0.76));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+.countdown-unit::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.8), transparent);
+}
+
+.countdown-unit span {
+  color: var(--cyan-400);
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow: 0 0 20px rgba(34, 211, 238, 0.22);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-unit small {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.event-countdown.is-complete .countdown-unit span {
+  color: var(--emerald-400);
+}
+
+.event-countdown-hero {
+  width: min(100%, 700px);
+  margin-top: 12px;
+  margin-bottom: 0;
+  padding: 22px;
+  border-radius: 20px;
+}
+
+.event-countdown-hero .event-countdown-copy strong {
+  font-size: 1.1rem;
+}
+
+.event-countdown-hero .countdown-unit:nth-child(2) span {
+  color: var(--blue-400);
+}
+
+.event-countdown-hero .countdown-unit:nth-child(3) span {
+  color: #2dd4bf;
+}
+
+.event-countdown-hero .countdown-unit:nth-child(4) span {
+  color: var(--pink-400);
+}
+
+.event-countdown-dashboard {
+  width: 100%;
+  margin-bottom: 0;
+  animation: none;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1128,6 +1282,22 @@ a {
     flex-direction: column;
     width: 100%;
     max-width: 320px;
+  }
+
+  .event-countdown {
+    padding: 14px;
+  }
+
+  .event-countdown-hero {
+    width: 100%;
+  }
+
+  .countdown-clock {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .countdown-unit span {
+    font-size: 1.35rem;
   }
 
   .btn {
