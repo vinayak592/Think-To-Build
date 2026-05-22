@@ -4,9 +4,52 @@ const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 const Team = require('../models/Team');
 const EventState = require('../models/EventState');
 const { compareImages } = require('../services/clip');
+
+// ===== RATE LIMITERS =====
+
+// Strict: Auth endpoints — 10 attempts per 15 min per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts. Please wait 15 minutes and try again.' },
+  skipSuccessfulRequests: true, // Only count failed requests against limit
+});
+
+// Moderate: Registration — 5 per hour per IP
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many registration attempts. Please wait an hour.' },
+});
+
+// Upload: 10 uploads per 10 min per IP (teams can upload up to 3 times)
+const uploadLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many upload attempts. Please wait a few minutes.' },
+});
+
+// General API: 100 requests per minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' },
+});
+
+// Apply general limiter to all routes in this router
+router.use(generalLimiter);
 
 // ===== MULTER CONFIGURATION =====
 
@@ -121,7 +164,7 @@ router.get('/registration-status', async (req, res) => {
 });
 
 // Register
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   try {
     const teamCount = await Team.countDocuments();
     if (teamCount >= 50) {
@@ -160,7 +203,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { team_id } = req.body;
     if (!team_id) return res.status(400).json({ error: 'Team ID required' });
@@ -204,7 +247,7 @@ router.get('/team/me', authenticateToken, async (req, res) => {
 // ===== ADMIN & JUDGE AUTH =====
 
 // Admin Login
-router.post('/auth/admin', (req, res) => {
+router.post('/auth/admin', authLimiter, (req, res) => {
   const { email, password } = req.body;
   const adminEmail = process.env.ADMIN_EMAIL || 'admin456@gmail.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin456';
@@ -221,7 +264,7 @@ router.post('/auth/admin', (req, res) => {
 });
 
 // Judge Login
-router.post('/auth/judge', (req, res) => {
+router.post('/auth/judge', authLimiter, (req, res) => {
   const { email, password } = req.body;
   const judgeEmail = process.env.JUDGE_EMAIL || 'judges456@gmail.com';
   const judgePassword = process.env.JUDGE_PASSWORD || 'judges456';
@@ -379,7 +422,7 @@ router.post('/admin/clear-disqualification', authenticateToken, authorizeRoles('
 const activeUploads = new Set();
 
 // Upload participant images and score with CLIP
-router.post('/upload-images', authenticateToken, (req, res) => {
+router.post('/upload-images', authenticateToken, uploadLimiter, (req, res) => {
   const team_id = req.user.team_id;
   if (!team_id) {
     return res.status(403).json({ error: 'Team token required.' });
