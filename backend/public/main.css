@@ -507,7 +507,8 @@ a {
 }
 
 .event-countdown-hero {
-  width: min(100%, 700px);
+  width: calc(100vw - 80px);
+  max-width: 1120px;
   margin-top: 12px;
   margin-bottom: 0;
   padding: 22px;
@@ -1290,6 +1291,7 @@ a {
 
   .event-countdown-hero {
     width: 100%;
+    max-width: none;
   }
 
   .countdown-clock {

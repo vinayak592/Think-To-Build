@@ -30,7 +30,7 @@
     countdown.classList.toggle('is-complete', reachedTarget);
 
     const title = countdown.querySelector('.event-countdown-copy strong');
-    if (title && reachedTarget) title.textContent = 'June 5 is here';
+    if (title && reachedTarget) title.textContent = 'Event started';
 
     return !reachedTarget;
   }
