@@ -4,52 +4,82 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Think to Build | Admin Panel</title>
+  <link rel="stylesheet" href="main.css">
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     .admin-login-card {
-      max-width: 440px;
-      margin: 80px auto;
+      max-width: 460px;
+      margin: 120px auto 40px;
       text-align: center;
+      position: relative;
+      z-index: 10;
     }
-    .admin-login-card .role-badge {
-      display: inline-block;
-      padding: 4px 14px;
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
       border-radius: 100px;
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      background: rgba(239, 68, 68, 0.15);
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.25);
       color: #ef4444;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
+      font-family: var(--font-mono);
     }
     .form-group {
       text-align: left;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
     .form-group label {
       display: block;
-      margin-bottom: 6px;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-    .form-group input {
-      width: 100%;
+      margin-bottom: 8px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-secondary);
     }
     .error-msg {
-      color: var(--danger);
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      padding: 12px;
+      border-radius: 8px;
       text-align: center;
-      margin-bottom: 12px;
+      margin-bottom: 20px;
       font-size: 0.9rem;
       display: none;
+      font-weight: 500;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .back-home-link {
+      color: var(--blue-400);
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .back-home-link:hover {
+      color: var(--blue-500);
+      transform: translateX(-3px);
     }
 
-    /* Admin Dashboard (after login) */
+    /* Upgraded Admin Dashboard Styles */
     .admin-dashboard {
-      max-width: 900px;
-      margin: 40px auto;
+      max-width: 1000px;
+      margin: 120px auto 40px;
       display: none;
+      position: relative;
+      z-index: 10;
     }
     .event-control-card {
       text-align: center;
@@ -57,72 +87,116 @@
     }
     .event-status {
       font-size: 1.1rem;
-      margin: 20px 0;
-      padding: 16px;
-      border-radius: 8px;
+      margin: 20px auto;
+      padding: 18px;
+      border-radius: 12px;
+      max-width: 500px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     }
     .event-status.stopped {
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #ef4444;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #f87171;
     }
     .event-status.started {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #10b981;
+      background: rgba(52, 211, 153, 0.08);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      color: #34d399;
     }
     .event-btn-group {
       display: flex;
       gap: 16px;
       justify-content: center;
-      margin-top: 20px;
+      margin-top: 24px;
     }
     .btn-start {
-      background: linear-gradient(135deg, #10b981, #059669);
+      background: linear-gradient(135deg, var(--emerald-400), #059669);
       padding: 14px 40px;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
     }
     .btn-start:hover {
       box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+      transform: translateY(-2px);
     }
     .btn-stop {
       background: linear-gradient(135deg, #ef4444, #dc2626);
       padding: 14px 40px;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
     }
     .btn-stop:hover {
       box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+      transform: translateY(-2px);
     }
     .btn-view-leaderboard {
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: rgba(96, 165, 250, 0.1);
+      border: 1px solid rgba(96, 165, 250, 0.2);
+      color: var(--blue-400);
       margin-top: 16px;
+      border-radius: 8px;
+      padding: 12px 24px;
+      transition: all 0.3s ease;
+    }
+    .btn-view-leaderboard:hover {
+      background: rgba(96, 165, 250, 0.2);
+      border-color: var(--blue-400);
+      transform: translateY(-2px);
     }
     .admin-info {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 30px;
+      background: var(--bg-card);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid var(--border-subtle);
+      padding: 20px 30px;
+      border-radius: 16px;
     }
     .admin-info .admin-name {
-      color: var(--primary);
+      color: var(--blue-400);
       font-weight: 600;
     }
     .btn-logout {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 8px 16px;
-      font-size: 0.85rem;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .btn-logout:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      transform: translateY(-2px);
     }
     .pulse-dot-live {
       display: inline-block;
       width: 10px;
       height: 10px;
-      background: #10b981;
+      background: #34d399;
       border-radius: 50%;
+      box-shadow: 0 0 10px #34d399;
+      animation: pulse-green 2s infinite;
       margin-right: 8px;
-      animation: pulse 2s infinite;
+    }
+    @keyframes pulse-green {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
     }
     .pulse-dot-off {
       display: inline-block;
@@ -130,112 +204,196 @@
       height: 10px;
       background: #ef4444;
       border-radius: 50%;
+      box-shadow: 0 0 6px #ef4444;
       margin-right: 8px;
     }
   </style>
 </head>
 <body>
 
-  <!-- Login Card -->
-  <div class="container" id="login-section">
-    <div class="glass-card admin-login-card" id="admin-login-card">
-      <span class="role-badge">🔒 Admin Access</span>
-      <h1>Admin Login</h1>
-      <p style="margin-bottom: 24px;">Enter your admin credentials to manage the event.</p>
+  <!-- Animated Background Canvas -->
+  <canvas id="particle-canvas"></canvas>
 
-      <div id="error-msg" class="error-msg"></div>
+  <!-- Glowing Grid Overlay -->
+  <div class="grid-overlay"></div>
 
-      <form id="admin-login-form" style="display: flex; flex-direction: column; gap: 4px;">
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="admin-email" placeholder="admin@email.com" required>
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="text" id="admin-password" placeholder="Enter password" required>
-        </div>
-        <button type="submit" style="width: 100%; margin-top: 12px;">Login as Admin</button>
-      </form>
+  <!-- Floating Orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
 
-      <p style="text-align: center; margin-top: 20px; font-size: 0.85rem;">
-        <a href="/" style="color: var(--primary);">← Back to Home</a>
-      </p>
+  <!-- Main Wrapper -->
+  <div class="main-wrapper" style="min-height: 100vh; display: flex; flex-direction: column;">
+
+    <!-- Navigation Bar -->
+    <nav class="top-nav" id="top-nav">
+      <div class="nav-brand">
+        <span class="nav-logo-icon">⚡</span>
+        <span class="nav-logo-text">THINK<span class="accent">TO BUILD</span></span>
+      </div>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/portals" class="nav-link">Portals</a>
+        <a href="/register" class="nav-link nav-cta">Register Now</a>
+      </div>
+    </nav>
+
+    <!-- Login Card -->
+    <div class="container" id="login-section" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+      <div class="glass-card admin-login-card" id="admin-login-card">
+        <span class="role-badge">🔒 Admin Access</span>
+        <h1>Admin Login</h1>
+        <p style="margin-bottom: 30px; color: var(--text-secondary);">Enter your admin credentials to manage the event.</p>
+
+        <div id="error-msg" class="error-msg"></div>
+
+        <form id="admin-login-form" style="display: flex; flex-direction: column; gap: 4px;">
+          <div class="form-group">
+            <label>Email Address</label>
+            <div class="input-group">
+              <input type="email" id="admin-email" placeholder="admin@email.com" required>
+              <svg class="input-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
+              </svg>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-group">
+              <input type="password" id="admin-password" placeholder="••••••••" required>
+              <svg class="input-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('admin-password', 'eye-icon')">
+                <svg id="eye-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-premium" style="width: 100%; margin-top: 16px; background: linear-gradient(135deg, #ef4444, #f472b6) !important; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25) !important;">
+            Login as Admin
+            <div class="btn-shine"></div>
+          </button>
+        </form>
+
+        <p style="text-align: center; margin-top: 28px;">
+          <a href="/" class="back-home-link">← Back to Home</a>
+        </p>
+      </div>
     </div>
+
+    <!-- Admin Dashboard (after login) -->
+    <div class="container admin-dashboard" id="admin-dashboard">
+      <div class="admin-info">
+        <div>
+          <h1 style="font-size: 1.8rem; margin: 0; background: linear-gradient(to right, var(--blue-400), var(--purple-400)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Admin Control Center</h1>
+          <p style="margin-top: 4px;">Logged in as <span class="admin-name" id="admin-email-display">admin</span></p>
+        </div>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+      </div>
+
+      <!-- Event Control -->
+      <div class="glass-card event-control-card">
+        <h2 style="margin-bottom: 8px; font-family: var(--font-display);">Competition Status</h2>
+        <p style="color: var(--text-secondary);">Start or pause the AI Image Generation battleground</p>
+
+        <div class="event-status stopped" id="event-status-display">
+          <span class="pulse-dot-off" id="status-dot"></span>
+          <strong id="status-text">Event is NOT started</strong>
+        </div>
+
+        <div class="event-btn-group">
+          <button class="btn-start" id="btn-start-event" onclick="startEvent()">
+            ▶ Start Event
+          </button>
+          <button class="btn-stop" id="btn-stop-event" onclick="stopEvent()" style="display: none;">
+            ⏹ Stop Event
+          </button>
+        </div>
+      </div>
+
+      <!-- Target Image Upload -->
+      <div class="glass-card" style="margin-bottom: 30px; text-align: center;">
+        <h2 style="margin-bottom: 8px; font-family: var(--font-display);">Reference Image</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">The official reference image for prompt engineering comparison</p>
+        <div style="margin-bottom: 24px;">
+          <img id="target-preview" src="/uploads/reference/reference.jpg" alt="Target" style="max-width: 300px; max-height: 300px; border-radius: 12px; border: 1px solid var(--border-glow); box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: cover;" onerror="this.style.display='none'">
+        </div>
+        <input type="file" id="target-file-input" accept="image/*" style="display: none;">
+        <button class="btn-premium" style="padding: 12px 30px !important; font-size: 0.9rem !important;" onclick="document.getElementById('target-file-input').click()">
+          📷 Upload Reference Image
+          <div class="btn-shine"></div>
+        </button>
+        <p id="target-upload-status" style="margin-top: 12px; font-size: 0.85rem; color: var(--text-secondary); font-family: var(--font-mono);"></p>
+      </div>
+
+      <!-- Leaderboard below -->
+      <div class="glass-card" style="margin-bottom: 40px;">
+        <div class="controls">
+          <button onclick="window.open('/api/admin', '_blank')" class="btn-view-leaderboard">Open Leaderboard Tab →</button>
+        </div>
+
+        <h3 style="margin-bottom: 16px; font-family: var(--font-display);">Real-time Leaderboard Preview</h3>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Team Name</th>
+              <th>Images Submitted</th>
+              <th>Best CLIP Score</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer" style="margin-top: auto; padding: 20px 0; border-top: 1px solid var(--border-subtle); background: rgba(5, 10, 24, 0.4); backdrop-filter: blur(10px);">
+      <div class="footer-content" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div class="footer-brand" style="display: flex; align-items: center; gap: 8px;">
+          <span class="nav-logo-icon" style="font-size: 1rem;">⚡</span>
+          <span class="nav-logo-text" style="font-size: 0.9rem; letter-spacing: 2px;">THINK<span class="accent">TO BUILD</span></span>
+        </div>
+        <p class="footer-text" style="font-size: 0.8rem; color: var(--text-muted);">© 2026 Think to Build. All rights reserved.</p>
+      </div>
+    </footer>
+
   </div>
 
-  <!-- Admin Dashboard (after login) -->
-  <div class="container admin-dashboard" id="admin-dashboard">
-    <div class="admin-info">
-      <div>
-        <h1 style="font-size: 1.8rem;">Admin Panel</h1>
-        <p>Logged in as <span class="admin-name" id="admin-email-display">admin</span></p>
-      </div>
-      <button class="btn-logout" onclick="logout()">Logout</button>
-    </div>
-
-    <!-- Event Control -->
-    <div class="glass-card event-control-card">
-      <h2 style="margin-bottom: 8px;">Event Control</h2>
-      <p style="color: var(--text-muted);">Manage the AI Image Generation competition</p>
-
-      <div class="event-status stopped" id="event-status-display">
-        <span class="pulse-dot-off" id="status-dot"></span>
-        <strong id="status-text">Event is NOT started</strong>
-      </div>
-
-      <div class="event-btn-group">
-        <button class="btn-start" id="btn-start-event" onclick="startEvent()">
-          ▶ Start Event
-        </button>
-        <button class="btn-stop" id="btn-stop-event" onclick="stopEvent()" style="display: none;">
-          ⏹ Stop Event
-        </button>
-      </div>
-    </div>
-
-    <!-- Target Image Upload -->
-    <div class="glass-card" style="margin-bottom: 30px; text-align: center;">
-      <h2 style="margin-bottom: 8px;">Target Image</h2>
-      <p style="color: var(--text-muted); margin-bottom: 20px;">Upload the reference image that teams will try to match</p>
-      <div style="margin-bottom: 20px;">
-        <img id="target-preview" src="/uploads/reference/reference.jpg" alt="Target" style="max-width: 300px; max-height: 300px; border-radius: 12px; border: 1px solid var(--border); object-fit: cover;" onerror="this.style.display='none'">
-      </div>
-      <input type="file" id="target-file-input" accept="image/*" style="display: none;">
-      <button class="btn-start" style="background: linear-gradient(135deg, #60a5fa, #3b82f6);" onclick="document.getElementById('target-file-input').click()">
-        📷 Upload Target Image
-      </button>
-      <p id="target-upload-status" style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);"></p>
-    </div>
-
-    <!-- Leaderboard below -->
-    <div class="glass-card">
-      <div class="controls">
-        <button onclick="window.open('/api/admin', '_blank')" class="btn-view-leaderboard">Open Judge Leaderboard →</button>
-      </div>
-
-      <h3 style="margin-bottom: 16px;">Quick Leaderboard Preview</h3>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Team</th>
-            <th>Images</th>
-            <th>Round 1 Score</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboard-body">
-          <!-- Populated by JS -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="main.js"></script>
   <script>
     const socket = io();
     let adminToken = localStorage.getItem('techfusion_admin_token');
+
+    // Password visibility toggle helper
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+        `;
+      } else {
+        input.type = 'password';
+        icon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        `;
+      }
+    }
 
     // Real-time synchronization
     socket.on('event_started', () => updateStatusUI(true));
@@ -291,7 +449,7 @@
       localStorage.removeItem('techfusion_admin_token');
       localStorage.removeItem('techfusion_admin_email');
       adminToken = null;
-      document.getElementById('login-section').style.display = 'block';
+      document.getElementById('login-section').style.display = 'flex';
       document.getElementById('admin-dashboard').style.display = 'none';
     }
 
@@ -405,7 +563,7 @@
         const data = await res.json();
         if (data.success) {
           statusEl.textContent = '✅ Target image uploaded successfully!';
-          statusEl.style.color = '#10b981';
+          statusEl.style.color = '#34d399';
           const preview = document.getElementById('target-preview');
           preview.src = '/uploads/reference/reference.jpg?' + Date.now();
           preview.style.display = 'block';
@@ -444,7 +602,7 @@
           tr.className = team.disqualified ? 'team-row disqualified' : 'team-row';
           tr.innerHTML = `
             <td>${i + 1}</td>
-            <td><strong>${team.team_id}</strong><br><span style="font-size:0.75rem;color:var(--text-muted);">${team.participant_name || ''} (${team.team_name || ''})</span></td>
+            <td><strong>${team.team_id}</strong><br><span style="font-size:0.75rem;color:var(--text-secondary);">${team.participant_name || ''} (${team.team_name || ''})</span></td>
             <td>${(team.round1_images || []).length} / 3</td>
             <td>${(team.round1_score || 0).toFixed(2)}</td>
             <td><span class="badge ${team.disqualified ? 'badge-dq' : 'badge-active'}">${team.disqualified ? 'DQ' : 'Active'}</span></td>
@@ -485,7 +643,7 @@
         const data = await res.json();
         if (data.success) {
           alert(`Team ${teamId} has been disqualified.`);
-          loadLeaderboard(); // Refresh leaderboard
+          fetchLeaderboard(); // Fixed bug: calling fetchLeaderboard() instead of loadLeaderboard()
         } else {
           alert(data.error || 'Failed to disqualify team.');
         }
@@ -517,7 +675,7 @@
         const data = await res.json();
         if (data.success) {
           alert(`Disqualification cleared for team ${teamId}. They can now use their 3 upload attempts.`);
-          loadLeaderboard(); // Refresh leaderboard
+          fetchLeaderboard(); // Fixed bug: calling fetchLeaderboard() instead of loadLeaderboard()
         } else {
           alert(data.error || 'Failed to clear disqualification.');
         }

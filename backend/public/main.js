@@ -124,37 +124,39 @@
   ];
 
   const typeEl = document.getElementById('type-effect');
-  let phraseIdx = 0;
-  let charIdx = 0;
-  let isDeleting = false;
-  let typeSpeed = 80;
+  if (typeEl) {
+    let phraseIdx = 0;
+    let charIdx = 0;
+    let isDeleting = false;
+    let typeSpeed = 80;
 
-  function typeLoop() {
-    const current = phrases[phraseIdx];
+    const typeLoop = function() {
+      const current = phrases[phraseIdx];
 
-    if (isDeleting) {
-      typeEl.textContent = current.substring(0, charIdx - 1);
-      charIdx--;
-      typeSpeed = 40;
-    } else {
-      typeEl.textContent = current.substring(0, charIdx + 1);
-      charIdx++;
-      typeSpeed = 80;
-    }
+      if (isDeleting) {
+        typeEl.textContent = current.substring(0, charIdx - 1);
+        charIdx--;
+        typeSpeed = 40;
+      } else {
+        typeEl.textContent = current.substring(0, charIdx + 1);
+        charIdx++;
+        typeSpeed = 80;
+      }
 
-    if (!isDeleting && charIdx === current.length) {
-      typeSpeed = 2000; // pause at end
-      isDeleting = true;
-    } else if (isDeleting && charIdx === 0) {
-      isDeleting = false;
-      phraseIdx = (phraseIdx + 1) % phrases.length;
-      typeSpeed = 500; // pause before next word
-    }
+      if (!isDeleting && charIdx === current.length) {
+        typeSpeed = 2000; // pause at end
+        isDeleting = true;
+      } else if (isDeleting && charIdx === 0) {
+        isDeleting = false;
+        phraseIdx = (phraseIdx + 1) % phrases.length;
+        typeSpeed = 500; // pause before next word
+      }
 
-    setTimeout(typeLoop, typeSpeed);
+      setTimeout(typeLoop, typeSpeed);
+    };
+
+    setTimeout(typeLoop, 1500);
   }
-
-  setTimeout(typeLoop, 1500);
 
   // ==============================
   // 3. NUMBER COUNTER ANIMATION

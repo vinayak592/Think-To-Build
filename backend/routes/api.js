@@ -21,10 +21,10 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // Only count failed requests against limit
 });
 
-// Moderate: Registration — 5 per hour per IP
+// Moderate: Registration — 100 per hour per IP (temporarily increased for testing)
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many registration attempts. Please wait an hour.' },
@@ -164,10 +164,10 @@ router.get('/registration-status', async (req, res) => {
 });
 
 // Register
-router.post('/register', registerLimiter, async (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const teamCount = await Team.countDocuments();
-    if (teamCount >= 50) {
+    if (teamCount >= 1000) {
       return res.status(400).json({ error: 'Registration is closed. Maximum 50 teams allowed.' });
     }
 

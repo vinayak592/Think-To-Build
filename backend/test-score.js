@@ -13,7 +13,7 @@ async function testFlow() {
   try {
     await downloadImage();
     console.log("1. Authenticating as admin...");
-    let res = await fetch('http://localhost:3004/api/auth/admin', {
+    let res = await fetch('http://localhost:3005/api/auth/admin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'admin456@gmail.com', password: 'admin456' })
@@ -28,7 +28,7 @@ async function testFlow() {
     const targetBlob = new Blob([fs.readFileSync(dummyImagePath)], { type: 'image/png' });
     formDataTarget.append('target', targetBlob, 'dummy.png');
 
-    res = await fetch('http://localhost:3004/api/admin/upload-target', {
+    res = await fetch('http://localhost:3005/api/admin/upload-target', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${adminToken}` },
       body: formDataTarget
@@ -38,7 +38,7 @@ async function testFlow() {
     console.log("Target uploaded:", data.path);
 
     console.log("3. Starting event...");
-    res = await fetch('http://localhost:3004/api/event/start', {
+    res = await fetch('http://localhost:3005/api/event/start', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${adminToken}` }
     });
@@ -46,28 +46,38 @@ async function testFlow() {
     if (!data.success) throw new Error("Event start failed: " + JSON.stringify(data));
     console.log("Event started.");
 
-    console.log("4. Registering test team...");
-    const teamEmail = `test${Date.now()}@test.com`;
-    res = await fetch('http://localhost:3004/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: teamEmail,
-        team_name: 'Test Team',
-        participant_name: 'Test User'
+    console.log("4. Registering 50 test teams concurrently...");
+    const registrationPromises = [];
+    for (let i = 0; i < 50; i++) {
+      const teamEmail = `test${i}_${Date.now()}@test.com`;
+      const regPromise = fetch('http://localhost:3005/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: teamEmail,
+          team_name: `Test Team ${i}`,
+          participant_name: `Test User ${i}`
+        })
       })
-    });
-    data = await res.json();
-    if (!data.success) throw new Error("Register failed: " + JSON.stringify(data));
-    const teamToken = data.token;
-    const teamId = data.team_id;
-    console.log("Team registered:", teamId);
+        .then(r => r.json())
+        .then(data => {
+          if (!data.success) throw new Error("Register failed for team " + i + ": " + JSON.stringify(data));
+          console.log(`Team ${i} registered:`, data.team_id);
+          return data;
+        });
+      registrationPromises.push(regPromise);
+    }
+    const registrationResults = await Promise.all(registrationPromises);
+    // Optionally collect tokens/ids for further steps
+    const teamTokens = registrationResults.map(r => r.token);
+    const teamIds = registrationResults.map(r => r.team_id);
+    console.log(`All ${registrationResults.length} teams registered.`);
 
     console.log("5. Uploading participant image to get score...");
     const formDataParticipant = new FormData();
     formDataParticipant.append('images', targetBlob, 'dummy.png');
 
-    res = await fetch('http://localhost:3004/api/upload-images', {
+    res = await fetch('http://localhost:3005/api/upload-images', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${teamToken}` },
       body: formDataParticipant
