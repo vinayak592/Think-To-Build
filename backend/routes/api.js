@@ -143,12 +143,29 @@ router.post('/register', async (req, res) => {
 
     const { email, team_name, participant_name, phone_number, member_count, members } = req.body;
 
+    // Validate required fields
     if (!email || !team_name || !participant_name || !phone_number) {
       return res.status(400).json({ error: 'Email, Team Name, Participant Name, and Phone Number are required.' });
     }
 
-    const existingTeam = await Team.findOne({ email });
-    if (existingTeam) {
+    // Check for duplicate team name
+    const existingTeamByName = await Team.findOne({ team_name });
+    if (existingTeamByName) {
+      return res.status(400).json({ error: 'Team name already registered.' });
+    }
+    // Check for duplicate participant name
+    const existingTeamByParticipant = await Team.findOne({ participant_name });
+    if (existingTeamByParticipant) {
+      return res.status(400).json({ error: 'Participant name already registered.' });
+    }
+    // Check for duplicate phone number
+    const existingTeamByPhone = await Team.findOne({ phone_number });
+    if (existingTeamByPhone) {
+      return res.status(400).json({ error: 'Phone number already registered.' });
+    }
+    // Check for duplicate email
+    const existingTeamByEmail = await Team.findOne({ email });
+    if (existingTeamByEmail) {
       return res.status(400).json({ error: 'Email already registered.' });
     }
 
