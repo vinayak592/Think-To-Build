@@ -299,13 +299,32 @@ function updateUI() {
     attemptsCounter.textContent = `${used} / ${max}`;
   }
 
-  // Update Round 1 Score display - show if images exist
+  // Update Round 1 Score display — show individual scores + best of 3
   const scoreDisplay = document.getElementById('score-display');
   const round1ScoreElem = document.getElementById('round1-score');
   if (images.length > 0 && scoreDisplay && round1ScoreElem) {
     scoreDisplay.style.display = 'flex';
-    const score = Number(currentTeam.round1_score) || 0;
-    round1ScoreElem.textContent = score.toFixed(2);
+    const bestScore = Number(currentTeam.round1_score) || 0;
+    round1ScoreElem.textContent = bestScore.toFixed(2);
+
+    // Populate individual image score boxes
+    images.forEach((img, i) => {
+      const box = document.getElementById(`score-box-${i + 1}`);
+      const scoreEl = document.getElementById(`img${i + 1}-score`);
+      if (box && scoreEl) {
+        const imgScore = (Number(img.score) || 0).toFixed(2);
+        scoreEl.textContent = `${imgScore}%`;
+        // Highlight the box that contains the best score
+        if (Number(img.score) >= bestScore && bestScore > 0) {
+          scoreEl.style.color = '#34d399'; // green for winner
+          box.style.border = '1px solid rgba(52,211,153,0.4)';
+        } else {
+          scoreEl.style.color = '#a78bfa';
+          box.style.border = '';
+        }
+        box.style.display = 'block';
+      }
+    });
   }
 
   checkEventStatus();
@@ -329,13 +348,17 @@ function updateUI() {
   const maxAttempts = currentTeam.max_upload_attempts || 3;
   if (usedAttempts >= maxAttempts) {
     lockInterface('MAX_ATTEMPTS');
+    renderUploadedImages();
     return;
   }
 
   if (images.length >= 3) {
     lockInterface('MAX_UPLOADS');
+    renderUploadedImages();
     return;
   }
+
+  renderUploadedImages();
 }
 
 async function checkEventStatus() {
@@ -565,4 +588,125 @@ async function triggerDisqualification(reason = 'Anti-cheat rule triggered') {
       console.error('Failed to sync disqualification');
     }
   }
+}
+
+function renderUploadedImages() {
+  const section = document.getElementById('uploaded-images-section');
+  const textList = document.getElementById('results-text-list');
+  const grid = document.getElementById('uploaded-images-grid');
+  
+  if (!section || !textList || !grid) return;
+  
+  const images = (currentTeam && currentTeam.round1_images) || [];
+  if (images.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  
+  section.style.display = 'block';
+  textList.innerHTML = '';
+  grid.innerHTML = '';
+  
+  // Find highest score image
+  let bestImg = null;
+  let bestScore = -1;
+  images.forEach(img => {
+    const s = Number(img.score) || 0;
+    if (s > bestScore) {
+      bestScore = s;
+      bestImg = img;
+    }
+  });
+
+  // Render text results list exactly as requested
+  images.forEach((img, i) => {
+    const filename = img.image_path.split('/').pop();
+    const scoreVal = (Number(img.score) || 0).toFixed(0); // Show as percentage score
+    
+    const textItem = document.createElement('div');
+    textItem.textContent = `${filename} → ${scoreVal}% Hibiscus`;
+    textList.appendChild(textItem);
+  });
+  
+  if (bestImg) {
+    const bestFilename = bestImg.image_path.split('/').pop();
+    const bestItem = document.createElement('div');
+    bestItem.style.marginTop = '8px';
+    bestItem.style.fontWeight = 'bold';
+    bestItem.style.color = '#60a5fa';
+    bestItem.textContent = `BEST MATCH → ${bestFilename}`;
+    textList.appendChild(bestItem);
+  }
+  
+  // Render visual cards
+  images.forEach((img, i) => {
+    const filename = img.image_path.split('/').pop();
+    const isBest = img === bestImg;
+    const scoreVal = (Number(img.score) || 0).toFixed(2);
+    
+    const card = document.createElement('div');
+    card.className = 'preview-item';
+    card.style.position = 'relative';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    
+    if (isBest) {
+      card.style.border = '2px solid #60a5fa';
+      card.style.boxShadow = '0 0 15px rgba(96, 165, 250, 0.4)';
+    } else {
+      card.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+    }
+    
+    const imageEl = document.createElement('img');
+    imageEl.src = img.image_path;
+    imageEl.alt = filename;
+    imageEl.style.width = '100%';
+    imageEl.style.height = '120px';
+    imageEl.style.objectFit = 'cover';
+    
+    const label = document.createElement('div');
+    label.className = 'preview-label';
+    label.style.display = 'flex';
+    label.style.flexDirection = 'column';
+    label.style.gap = '2px';
+    label.style.padding = '8px 10px';
+    label.style.background = 'rgba(15, 23, 42, 0.95)';
+    label.style.color = '#cbd5e1';
+    label.style.fontSize = '0.75rem';
+    label.style.textAlign = 'center';
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.style.textOverflow = 'ellipsis';
+    nameSpan.style.overflow = 'hidden';
+    nameSpan.style.whiteSpace = 'nowrap';
+    nameSpan.textContent = filename;
+    
+    const scoreSpan = document.createElement('span');
+    scoreSpan.style.color = isBest ? '#60a5fa' : '#a78bfa';
+    scoreSpan.style.fontWeight = 'bold';
+    scoreSpan.textContent = `${scoreVal}% Hibiscus`;
+    
+    label.appendChild(nameSpan);
+    label.appendChild(scoreSpan);
+    
+    if (isBest) {
+      const bestBadge = document.createElement('div');
+      bestBadge.style.position = 'absolute';
+      bestBadge.style.top = '6px';
+      bestBadge.style.left = '6px';
+      bestBadge.style.background = '#60a5fa';
+      bestBadge.style.color = '#050a18';
+      bestBadge.style.padding = '2px 6px';
+      bestBadge.style.borderRadius = '4px';
+      bestBadge.style.fontSize = '0.65rem';
+      bestBadge.style.fontFamily = 'Orbitron';
+      bestBadge.style.fontWeight = 'bold';
+      bestBadge.textContent = 'BEST MATCH';
+      card.appendChild(bestBadge);
+    }
+    
+    card.appendChild(imageEl);
+    card.appendChild(label);
+    grid.appendChild(card);
+  });
 }

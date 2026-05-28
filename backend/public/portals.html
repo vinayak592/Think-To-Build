@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Think to Build | Innovation Hub</title>
-  <meta name="description" content="Think to Build - Where technology meets creativity. Explore AI competitions, team dashboards, and innovation challenges.">
+  <meta name="description" content="Think to Build - Where technology meets creativity. Explore AI competitions and innovation challenges.">
   <link rel="stylesheet" href="main.css">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
@@ -169,30 +169,9 @@
         <p class="section-desc">Access dashboards and management portals.</p>
       </div>
 
-      <div class="nav-cards-grid">
+      <div class="nav-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 400px)); justify-content: center;">
 
-        <!-- Card 2: Team Dashboard -->
-        <a href="/dashboard" class="nav-card" id="card-dashboard">
-          <div class="card-glow"></div>
-          <div class="card-content">
-            <div class="card-icon-wrap">
-              <div class="card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
-                </svg>
-              </div>
-              <span class="card-number">02</span>
-            </div>
-            <h3 class="card-title">Team Dashboard</h3>
-            <p class="card-desc">Enter the AI Prompt Battle arena. Generate images, submit prompts, and compete!</p>
-            <div class="card-footer">
-              <span class="card-tag">Competition</span>
-              <span class="card-arrow">→</span>
-            </div>
-          </div>
-        </a>
-
-        <!-- Card 3: Judge Panel -->
+        <!-- Card 2: Admin Panel -->
         <a href="/admin" class="nav-card" id="card-judge">
           <div class="card-glow"></div>
           <div class="card-content">
@@ -202,7 +181,7 @@
                   <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
                 </svg>
               </div>
-              <span class="card-number">03</span>
+              <span class="card-number">02</span>
             </div>
             <h3 class="card-title">Admin Panel</h3>
             <p class="card-desc">Login as admin to start/stop the event, manage teams, and control the competition.</p>
@@ -213,7 +192,7 @@
           </div>
         </a>
 
-        <!-- Card 4: Judge Panel -->
+        <!-- Card 3: Judge Panel -->
         <a href="/judge" class="nav-card" id="card-teams">
           <div class="card-glow"></div>
           <div class="card-content">
@@ -223,7 +202,7 @@
                   <path d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
                 </svg>
               </div>
-              <span class="card-number">04</span>
+              <span class="card-number">03</span>
             </div>
             <h3 class="card-title">Judge Panel</h3>
             <p class="card-desc">Login as judge to view the live leaderboard, score teams, and export results.</p>
@@ -284,7 +263,6 @@
         <p class="footer-text">Built with innovation & code. © 2026 Think to Build.</p>
         <div class="footer-links">
           <a href="/register">Register</a>
-          <a href="/dashboard">Dashboard</a>
           <a href="/admin">Admin</a>
           <a href="/judge">Judge</a>
         </div>

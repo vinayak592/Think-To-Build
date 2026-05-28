@@ -1,15 +1,15 @@
-const mongoose = require('mongoose');
 require('dotenv').config();
+const mongoose = require('mongoose');
 const Team = require('./models/Team');
 
 (async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, { maxPoolSize: 10 });
-    const result = await Team.deleteMany({});
-    console.log('Deleted', result.deletedCount, 'team(s)');
+    const count = await Team.countDocuments();
+    console.log('Actual DB count:', count);
     process.exit(0);
   } catch (e) {
-    console.error('Error clearing teams:', e);
+    console.error('Error counting teams:', e);
     process.exit(1);
   }
 })();

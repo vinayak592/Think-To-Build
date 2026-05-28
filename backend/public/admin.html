@@ -316,20 +316,6 @@
         </div>
       </div>
 
-      <!-- Target Image Upload -->
-      <div class="glass-card" style="margin-bottom: 30px; text-align: center;">
-        <h2 style="margin-bottom: 8px; font-family: var(--font-display);">Reference Image</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 24px;">The official reference image for prompt engineering comparison</p>
-        <div style="margin-bottom: 24px;">
-          <img id="target-preview" src="/uploads/reference/reference.jpg" alt="Target" style="max-width: 300px; max-height: 300px; border-radius: 12px; border: 1px solid var(--border-glow); box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: cover;" onerror="this.style.display='none'">
-        </div>
-        <input type="file" id="target-file-input" accept="image/*" style="display: none;">
-        <button class="btn-premium" style="padding: 12px 30px !important; font-size: 0.9rem !important;" onclick="document.getElementById('target-file-input').click()">
-          📷 Upload Reference Image
-          <div class="btn-shine"></div>
-        </button>
-        <p id="target-upload-status" style="margin-top: 12px; font-size: 0.85rem; color: var(--text-secondary); font-family: var(--font-mono);"></p>
-      </div>
 
       <!-- Leaderboard below -->
       <div class="glass-card" style="margin-bottom: 40px;">
@@ -343,8 +329,7 @@
             <tr>
               <th>Rank</th>
               <th>Team Name</th>
-              <th>Images Submitted</th>
-              <th>Best CLIP Score</th>
+              <th>Total Score (0-100)</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -543,40 +528,6 @@
       }
     }
 
-    // Target image upload handler
-    document.getElementById('target-file-input').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const statusEl = document.getElementById('target-upload-status');
-      statusEl.textContent = 'Uploading...';
-      statusEl.style.color = '#60a5fa';
-
-      const formData = new FormData();
-      formData.append('target', file);
-
-      try {
-        const res = await fetch('/api/admin/upload-target', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${adminToken}` },
-          body: formData
-        });
-        const data = await res.json();
-        if (data.success) {
-          statusEl.textContent = '✅ Target image uploaded successfully!';
-          statusEl.style.color = '#34d399';
-          const preview = document.getElementById('target-preview');
-          preview.src = '/uploads/reference/reference.jpg?' + Date.now();
-          preview.style.display = 'block';
-        } else {
-          statusEl.textContent = '❌ ' + (data.error || 'Upload failed');
-          statusEl.style.color = '#ef4444';
-        }
-      } catch (err) {
-        statusEl.textContent = '❌ Network error';
-        statusEl.style.color = '#ef4444';
-      }
-    });
-
     // Quick Leaderboard
     async function fetchLeaderboard() {
       if (!adminToken) return;
@@ -594,24 +545,39 @@
         teams.sort((a, b) => {
           if (a.disqualified && !b.disqualified) return 1;
           if (!a.disqualified && b.disqualified) return -1;
-          return (b.round1_score || 0) - (a.round1_score || 0);
+          return (b.round2_score || 0) - (a.round2_score || 0);
         });
 
         teams.forEach((team, i) => {
           const tr = document.createElement('tr');
           tr.className = team.disqualified ? 'team-row disqualified' : 'team-row';
+
+          // Determine status badge
+          let statusBadge = '';
+          if (team.disqualified) {
+            statusBadge = '<span class="badge badge-dq">DQ</span>';
+          } else if (team.qualified) {
+            statusBadge = '<span class="badge badge-active">Qualified</span>';
+          } else {
+            statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">Pending</span>';
+          }
+
+          // Determine action button
+          let actionButton = '';
+          if (team.disqualified) {
+            actionButton = `<button class="btn btn-success btn-sm" onclick="clearDisqualification('${team.team_id}')">Clear DQ</button>`;
+          } else if (team.qualified) {
+            actionButton = `<button class="btn btn-warning btn-sm" onclick="unqualifyTeam('${team.team_id}')">Disqualify</button>`;
+          } else {
+            actionButton = `<button class="btn btn-success btn-sm" onclick="qualifyTeam('${team.team_id}')">Qualify</button>`;
+          }
+
           tr.innerHTML = `
             <td>${i + 1}</td>
             <td><strong>${team.team_id}</strong><br><span style="font-size:0.75rem;color:var(--text-secondary);">${team.participant_name || ''} (${team.team_name || ''})</span></td>
-            <td>${(team.round1_images || []).length} / 3</td>
-            <td>${(team.round1_score || 0).toFixed(2)}</td>
-            <td><span class="badge ${team.disqualified ? 'badge-dq' : 'badge-active'}">${team.disqualified ? 'DQ' : 'Active'}</span></td>
-            <td>
-              ${team.disqualified ? 
-                `<button class="btn btn-success btn-sm" onclick="clearDisqualification('${team.team_id}')">Clear DQ</button>` :
-                `<button class="btn btn-warning btn-sm" onclick="disqualifyTeam('${team.team_id}')">Disqualify</button>`
-              }
-            </td>
+            <td>${(team.round2_score || 0).toFixed(2)}</td>
+            <td>${statusBadge}</td>
+            <td>${actionButton}</td>
           `;
           body.appendChild(tr);
         });
@@ -620,13 +586,13 @@
       }
     }
 
-    // Disqualification management
-    async function disqualifyTeam(teamId) {
-      if (!confirm(`Are you sure you want to disqualify team ${teamId}? This action cannot be undone.`)) return;
+    // Qualify management
+    async function qualifyTeam(teamId) {
+      if (!confirm(`Are you sure you want to qualify team ${teamId}? This will make them visible to the judges.`)) return;
       
       const token = localStorage.getItem('techfusion_admin_token');
       try {
-        const res = await fetch('/api/disqualify', {
+        const res = await fetch('/api/admin/qualify-team', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -642,10 +608,42 @@
 
         const data = await res.json();
         if (data.success) {
-          alert(`Team ${teamId} has been disqualified.`);
-          fetchLeaderboard(); // Fixed bug: calling fetchLeaderboard() instead of loadLeaderboard()
+          alert(`Team ${teamId} has been qualified and is now visible to the judges.`);
+          fetchLeaderboard();
         } else {
-          alert(data.error || 'Failed to disqualify team.');
+          alert(data.error || 'Failed to qualify team.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error.');
+      }
+    }
+
+    async function unqualifyTeam(teamId) {
+      if (!confirm(`Are you sure you want to disqualify/unqualify team ${teamId}? This will hide them from the judges.`)) return;
+      
+      const token = localStorage.getItem('techfusion_admin_token');
+      try {
+        const res = await fetch('/api/admin/unqualify-team', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ team_id: teamId })
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          alert('Session expired. Please login again.');
+          return logout();
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          alert(`Team ${teamId} has been disqualified/unqualified and is now hidden from the judges.`);
+          fetchLeaderboard();
+        } else {
+          alert(data.error || 'Failed to unqualify team.');
         }
       } catch (err) {
         console.error(err);
@@ -675,7 +673,7 @@
         const data = await res.json();
         if (data.success) {
           alert(`Disqualification cleared for team ${teamId}. They can now use their 3 upload attempts.`);
-          fetchLeaderboard(); // Fixed bug: calling fetchLeaderboard() instead of loadLeaderboard()
+          fetchLeaderboard();
         } else {
           alert(data.error || 'Failed to clear disqualification.');
         }

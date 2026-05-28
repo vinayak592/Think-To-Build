@@ -5,7 +5,7 @@ async function registerTeam() {
   const memberCountInput = document.getElementById('member-count');
   const memberTwoNameInput = document.getElementById('member-2-name');
   const errorEl = document.getElementById('error-msg');
-  
+  const phoneInput = document.getElementById('phone-number');
   const teamName = teamNameInput.value.trim();
   const email = emailInput.value.trim();
   const participantName = participantNameInput.value.trim();
@@ -48,6 +48,7 @@ async function registerTeam() {
         team_name: teamName,
         email: email,
         participant_name: participantName,
+        phone_number: phoneInput.value.trim(),
         member_count: memberCount,
         members
       })

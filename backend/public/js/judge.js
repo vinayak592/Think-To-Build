@@ -84,23 +84,19 @@ async function fetchLeaderboard() {
 function renderLeaderboard() {
   leaderboardBody.innerHTML = '';
   
-  // Filter out disqualified teams
-  const qualifiedTeams = teamsData.filter(team => !team.disqualified);
+  // Filter out disqualified or unqualified teams
+  const qualifiedTeams = teamsData.filter(team => team.qualified && !team.disqualified);
 
-  // Sort by final_total_score descending
+  // Sort by total score descending
   qualifiedTeams.sort((a, b) => {
     const aRound2 = calculateRound2ScoreFromRubric(getRubricBreakdown(a));
     const bRound2 = calculateRound2ScoreFromRubric(getRubricBreakdown(b));
-    const aTotal = (a.round1_score || 0) + aRound2;
-    const bTotal = (b.round1_score || 0) + bRound2;
-    return bTotal - aTotal;
+    return bRound2 - aRound2;
   });
 
   qualifiedTeams.forEach((team, index) => {
     const rubric = getRubricBreakdown(team);
-    const round2Score = calculateRound2ScoreFromRubric(rubric);
-    const round1 = team.round1_score || 0;
-    const totalScore = round1 + round2Score;
+    const totalScore = calculateRound2ScoreFromRubric(rubric);
 
     const tr = document.createElement('tr');
     tr.className = `team-row ${team.disqualified ? 'disqualified' : ''}`;
@@ -112,8 +108,6 @@ function renderLeaderboard() {
         <div style="font-size:0.75rem; color:#8892b0;">${team.participant_name || 'No Participant Name'}</div>
         <div style="font-size:0.75rem; color:#8892b0;">(${team.team_name || 'No Team Name'})</div>
       </td>
-      <td>${(team.round1_images || []).length} / 3</td>
-      <td>${round1.toFixed(2)}</td>
       <td>
         <input type="number" 
                class="score-input rubric-input"
@@ -132,68 +126,21 @@ function renderLeaderboard() {
                onchange="updateRound2Rubric('${team.team_id}')"
                ${team.disqualified ? 'disabled' : ''}>
       </td>
-      <td><span class="final-score" id="round2-auto-${team.team_id}">${round2Score.toFixed(2)}</span></td>
       <td><span class="final-score" id="final-total-${team.team_id}">${totalScore.toFixed(2)}</span></td>
       <td>
         <span class="badge ${team.disqualified ? 'badge-dq' : 'badge-active'}">
           ${team.disqualified ? 'DQ' : 'Active'}
         </span>
       </td>
-      <td>
-        <button class="btn-judge btn-export" style="padding: 6px 10px; font-size: 0.72rem;" onclick="toggleSubmissions('${team.team_id}')">
-          Submissions
-        </button>
-      </td>
     `;
-    
-    // Hidden row for submissions
-    const subTr = document.createElement('tr');
-    subTr.id = `sub-${team.team_id}`;
-    subTr.style.display = 'none';
-    
-    let subHtml = `<td colspan="10" class="submissions-drawer">
-      <div class="submissions-flex">`;
-    
-    const r1Images = team.round1_images || [];
-    if (r1Images.length === 0) {
-      subHtml += '<p style="color: #8892b0; font-style: italic;">No images uploaded yet.</p>';
-    } else {
-      r1Images.forEach((img, i) => {
-        subHtml += `
-          <div class="sub-card">
-            <p style="font-size: 0.8rem; margin-bottom: 8px;">Image ${i+1}</p>
-            <img src="${img.image_path}" alt="Image ${i+1}">
-            <div class="sub-details">
-              <p style="font-weight: bold; color: #34d399; font-size: 1rem;">CLIP Score: ${(img.score || 0).toFixed(2)}</p>
-            </div>
-          </div>
-        `;
-      });
-    }
-    subHtml += '</div></td>';
-    subTr.innerHTML = subHtml;
 
     leaderboardBody.appendChild(tr);
-    leaderboardBody.appendChild(subTr);
   });
-}
-
-function toggleSubmissions(teamId) {
-  const row = document.getElementById(`sub-${teamId}`);
-  const drawer = row.querySelector('.submissions-drawer');
-  if (row.style.display === 'none') {
-    row.style.display = 'table-row';
-    drawer.style.display = 'block';
-  } else {
-    row.style.display = 'none';
-    drawer.style.display = 'none';
-  }
 }
 
 async function updateRound2Rubric(teamId) {
   const creativityInput = document.getElementById(`rubric-creativity-${teamId}`);
   const accuracyInput = document.getElementById(`rubric-accuracy-${teamId}`);
-  const round2El = document.getElementById(`round2-auto-${teamId}`);
   const finalTotalEl = document.getElementById(`final-total-${teamId}`);
 
   if (!creativityInput || !accuracyInput) return;
@@ -212,9 +159,8 @@ async function updateRound2Rubric(teamId) {
   accuracyInput.value = String(payload.accuracy);
 
   const optimisticRound2 = calculateRound2ScoreFromRubric(payload);
-  if (round2El) round2El.textContent = optimisticRound2.toFixed(2);
-  if (finalTotalEl && team) {
-    finalTotalEl.textContent = ((team.round1_score || 0) + optimisticRound2).toFixed(2);
+  if (finalTotalEl) {
+    finalTotalEl.textContent = optimisticRound2.toFixed(2);
   }
 
   try {

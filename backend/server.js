@@ -1,5 +1,5 @@
 require('dotenv').config();
-const express = require('express');
+const express = require('express'); // trigger restart
 const http = require('http');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
@@ -19,6 +19,43 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   console.error('[FATAL] Unhandled Promise Rejection:', reason);
   // Don't exit — keep server alive
+});
+
+// ===== SPAWN PYTHON FLASK APP AUTOMATICALLY =====
+const { spawn } = require('child_process');
+const flaskAppDir  = path.resolve(__dirname, '../flask_app');
+const flaskAppPath = path.join(flaskAppDir, 'app.py');
+const pythonVenvPath = path.join(flaskAppDir, 'venv/Scripts/python.exe');
+const pythonCmd = fs.existsSync(pythonVenvPath) ? pythonVenvPath : 'python';
+
+console.log(`[SERVER] Flask app dir : ${flaskAppDir}`);
+console.log(`[SERVER] Python binary : ${pythonCmd}`);
+console.log(`[SERVER] Spawning Flask service...`);
+
+const pythonProcess = spawn(pythonCmd, [flaskAppPath], {
+  cwd: flaskAppDir,          // run Flask from its own directory
+  stdio: 'inherit',
+  shell: false,              // never pass through shell — avoids space-in-path issues
+  env: {
+    ...process.env,
+    PYTHONUNBUFFERED: '1',   // real-time log output
+  }
+});
+
+pythonProcess.on('error', (err) => {
+  console.error('[SERVER] [ERROR] Failed to start Python Flask app:', err.message);
+});
+
+pythonProcess.on('exit', (code, signal) => {
+  if (code !== null) console.warn(`[SERVER] Flask exited with code ${code}`);
+  if (signal)       console.warn(`[SERVER] Flask killed by signal ${signal}`);
+});
+
+process.on('exit', () => {
+  if (pythonProcess && !pythonProcess.killed) {
+    console.log('[SERVER] Terminating Python process...');
+    pythonProcess.kill();
+  }
 });
 
 const app = express();
@@ -143,6 +180,12 @@ mongoose.connection.on('reconnected', () => {
 // Allows in-flight requests to finish before closing on SIGTERM (Heroku/Railway deploys)
 function gracefulShutdown(signal) {
   console.log(`[SERVER] ${signal} received. Shutting down gracefully...`);
+  
+  if (pythonProcess) {
+    console.log('[SERVER] Killing Python Flask service...');
+    pythonProcess.kill();
+  }
+
   server.close(async () => {
     console.log('[SERVER] HTTP server closed.');
     try {

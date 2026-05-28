@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+// Built‑in fetch (Node >=18); no external import needed
 (async () => {
   try {
     // admin login

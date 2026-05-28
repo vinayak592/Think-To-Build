@@ -3,11 +3,32 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
-const multer = require('multer');
+
 const rateLimit = require('express-rate-limit');
 const Team = require('../models/Team');
 const EventState = require('../models/EventState');
 const { compareImages } = require('../services/clip');
+const axios = require('axios');
+const FormData = require('form-data');
+
+// Get Hibiscus score from Flask microservice
+async function getHibiscusScore(imagePath) {
+  try {
+    const form = new FormData();
+    form.append('images', fs.createReadStream(imagePath));
+    const response = await axios.post('http://127.0.0.1:5000/predict', form, {
+      headers: form.getHeaders(),
+      timeout: 30000
+    });
+    if (response.data && response.data.results && response.data.results.length > 0) {
+      return response.data.results[0].score;
+    }
+    return 0;
+  } catch (err) {
+    console.error('Hibiscus scoring failed:', err.message);
+    return 0;
+  }
+}
 
 // ===== RATE LIMITERS =====
 
@@ -50,57 +71,6 @@ const generalLimiter = rateLimit({
 
 // Apply general limiter to all routes in this router
 router.use(generalLimiter);
-
-// ===== MULTER CONFIGURATION =====
-
-// Storage for participant image uploads
-const participantStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../uploads/generated');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const teamId = req.user ? req.user.team_id : 'unknown';
-    const ext = path.extname(file.originalname) || '.jpg';
-    const uniqueName = `${teamId}_${Date.now()}_${Math.floor(Math.random() * 1000)}${ext}`;
-    cb(null, uniqueName);
-  }
-});
-
-// Storage for admin target image upload
-const targetStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../uploads/reference');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    // Always save as reference.jpg (overwrite previous)
-    cb(null, 'reference.jpg');
-  }
-});
-
-const imageFilter = (req, file, cb) => {
-  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  if (allowed.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only image files (JPEG, PNG, WebP, GIF) are allowed.'), false);
-  }
-};
-
-const uploadParticipantImages = multer({
-  storage: participantStorage,
-  fileFilter: imageFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB per file
-}).array('images', 3);
-
-const uploadTargetImage = multer({
-  storage: targetStorage,
-  fileFilter: imageFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }
-}).single('target');
 
 // ===== AUTH MIDDLEWARE =====
 
@@ -167,14 +137,14 @@ router.get('/registration-status', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const teamCount = await Team.countDocuments();
-    if (teamCount >= 1000) {
+    if (teamCount >= 50) {
       return res.status(400).json({ error: 'Registration is closed. Maximum 50 teams allowed.' });
     }
 
-    const { email, team_name, participant_name, member_count, members } = req.body;
+    const { email, team_name, participant_name, phone_number, member_count, members } = req.body;
 
-    if (!email || !team_name || !participant_name) {
-      return res.status(400).json({ error: 'Email, Team Name, and Participant Name are required.' });
+    if (!email || !team_name || !participant_name || !phone_number) {
+      return res.status(400).json({ error: 'Email, Team Name, Participant Name, and Phone Number are required.' });
     }
 
     const existingTeam = await Team.findOne({ email });
@@ -190,7 +160,7 @@ router.post('/register', async (req, res) => {
       if (!checkId) isUnique = true;
     }
 
-    const team = new Team({ team_id, email, team_name, participant_name });
+    const team = new Team({ team_id, email, team_name, participant_name, phone_number });
     await team.save();
 
     // Issue JWT
@@ -416,162 +386,58 @@ router.post('/admin/clear-disqualification', authenticateToken, authorizeRoles('
   }
 });
 
-// ===== ROUND 1: IMAGE UPLOAD + CLIP SCORING =====
-
-// Track active uploads to prevent duplicate submissions
-const activeUploads = new Set();
-
-// Upload participant images and score with CLIP
-router.post('/upload-images', authenticateToken, uploadLimiter, (req, res) => {
-  const team_id = req.user.team_id;
-  if (!team_id) {
-    return res.status(403).json({ error: 'Team token required.' });
-  }
-
-  if (activeUploads.has(team_id)) {
-    return res.status(429).json({ error: 'An upload is already in progress. Please wait.' });
-  }
-
-  activeUploads.add(team_id);
-
-  uploadParticipantImages(req, res, async (multerErr) => {
-    try {
-      if (multerErr) {
-        throw new Error(`Upload error: ${multerErr.message}`);
-      }
-
-      // Validate event state
-      const eventState = await EventState.findOne({ key: 'main' });
-      if (!eventState || !eventState.event_started) {
-        // Clean up uploaded files
-        if (req.files) req.files.forEach(f => fs.unlinkSync(f.path));
-        throw new Error('Event has not started yet.');
-      }
-
-      const team = await Team.findOne({ team_id });
-      if (!team) {
-        if (req.files) req.files.forEach(f => fs.unlinkSync(f.path));
-        throw new Error('Team not found.');
-      }
-
-      if (team.disqualified) {
-        if (req.files) req.files.forEach(f => fs.unlinkSync(f.path));
-        throw new Error('Team has been disqualified.');
-      }
-
-      if (team.opted_out) {
-        if (req.files) req.files.forEach(f => fs.unlinkSync(f.path));
-        throw new Error('Team has opted out of image uploads.');
-      }
-
-      if (team.upload_attempts_used >= team.max_upload_attempts) {
-        if (req.files) req.files.forEach(f => fs.unlinkSync(f.path));
-        throw new Error(`Maximum upload attempts (${team.max_upload_attempts}) already used.`);
-      }
-
-      if (!req.files || req.files.length === 0) {
-        throw new Error('No images uploaded. Please select up to 3 images.');
-      }
-
-      // Limit uploads to not exceed 3 total
-      const remainingSlots = 3 - team.round1_images.length;
-      const filesToProcess = req.files.slice(0, remainingSlots);
-
-      // Remove extra files if more were uploaded
-      if (req.files.length > remainingSlots) {
-        req.files.slice(remainingSlots).forEach(f => {
-          try { fs.unlinkSync(f.path); } catch (e) { }
-        });
-      }
-
-      // Get target image path
-      const targetImagePath = path.join(__dirname, '../uploads/reference/reference.jpg');
-      if (!fs.existsSync(targetImagePath)) {
-        filesToProcess.forEach(f => {
-          try { fs.unlinkSync(f.path); } catch (e) { }
-        });
-        throw new Error('Target image not found. Please contact admin.');
-      }
-
-      // Score each image against the target using CLIP
-      const results = [];
-      for (const file of filesToProcess) {
-        let score = 0;
-        try {
-          score = await compareImages(targetImagePath, file.path);
-          score = Math.max(0, Math.min(100, Number(score) || 0));
-        } catch (clipErr) {
-          console.error(`CLIP scoring failed for ${file.filename}:`, clipErr.message);
-          score = 0; // Fallback
-        }
-
-        const imageEntry = {
-          image_path: `/uploads/generated/${file.filename}`,
-          score: roundTo2(score)
-        };
-
-        team.round1_images.push(imageEntry);
-        results.push(imageEntry);
-      }
-
-      // Compute Round 1 score: best (max) of all image scores
-      const allScores = team.round1_images.map(img => Number(img.score) || 0);
-      const bestScore = allScores.length > 0 ? Math.max(...allScores) : 0;
-      team.round1_score = roundTo2(bestScore);
-
-      // Also update best_score for backward compat
-      team.best_score = team.round1_score;
-
-      // Increment upload attempt counter
-      team.upload_attempts_used += 1;
-
-      // Fix validation errors for legacy teams missing required fields
-      if (!team.participant_name) team.participant_name = "Unknown Participant";
-      if (!team.team_name) team.team_name = "Unknown Team";
-
-      await team.save();
-
-      const io = req.app.get('io');
-      if (io) io.emit('leaderboard_update');
-
-      res.json({
-        success: true,
-        images: results,
-        round1_score: team.round1_score,
-        total_images: team.round1_images.length
-      });
-    } catch (error) {
-      console.error('Upload-images error:', error.message);
-      res.status(500).json({ error: error.message });
-    } finally {
-      activeUploads.delete(team_id);
+// Qualify team (admin only)
+router.post('/admin/qualify-team', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { team_id } = req.body;
+    if (!team_id) {
+      return res.status(400).json({ error: 'Team ID is required.' });
     }
-  });
+
+    const team = await Team.findOneAndUpdate(
+      { team_id },
+      { qualified: true },
+      { returnDocument: 'after' }
+    );
+
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found.' });
+    }
+
+    const io = req.app.get('io');
+    if (io) io.emit('leaderboard_update');
+
+    res.json({ success: true, team });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// ===== ADMIN: UPLOAD TARGET IMAGE =====
-
-router.post('/admin/upload-target', authenticateToken, authorizeRoles('admin'), (req, res) => {
-  uploadTargetImage(req, res, (multerErr) => {
-    try {
-      if (multerErr) {
-        throw new Error(`Upload error: ${multerErr.message}`);
-      }
-
-      if (!req.file) {
-        throw new Error('No target image uploaded.');
-      }
-
-      console.log(`Target image uploaded: ${req.file.path}`);
-      res.json({
-        success: true,
-        message: 'Target image uploaded successfully.',
-        path: `/uploads/reference/${req.file.filename}`
-      });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+// Unqualify team (admin only)
+router.post('/admin/unqualify-team', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { team_id } = req.body;
+    if (!team_id) {
+      return res.status(400).json({ error: 'Team ID is required.' });
     }
-  });
+
+    const team = await Team.findOneAndUpdate(
+      { team_id },
+      { qualified: false },
+      { returnDocument: 'after' }
+    );
+
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found.' });
+    }
+
+    const io = req.app.get('io');
+    if (io) io.emit('leaderboard_update');
+
+    res.json({ success: true, team });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ===== TEAMS & ADMIN =====
@@ -668,7 +534,7 @@ router.post('/admin/score', authenticateToken, authorizeRoles('admin', 'judge'),
 router.get('/team/:team_id/registration', async (req, res) => {
   try {
     const team = await Team.findOne({ team_id: req.params.team_id })
-      .select('team_id team_name participant_name email round1_score disqualified warnings upload_attempts_used');
+      .select('team_id team_name participant_name email round1_score disqualified qualified warnings upload_attempts_used');
     if (!team) return res.status(404).json({ error: 'Team not found' });
     res.json({ success: true, team });
   } catch (error) {
@@ -683,6 +549,30 @@ router.get('/team/:team_id/images', async (req, res) => {
       .select('round1_images');
     if (!team) return res.status(404).json({ error: 'Team not found' });
     res.json({ success: true, images: team.round1_images });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Self-disqualify (called by anti-cheat in team.js)
+router.post('/disqualify', authenticateToken, async (req, res) => {
+  try {
+    const team_id = req.user.team_id;
+    if (!team_id) return res.status(403).json({ error: 'Team token required.' });
+
+    const team = await Team.findOneAndUpdate(
+      { team_id },
+      { disqualified: true, disqualified_at: new Date() },
+      { returnDocument: 'after' }
+    );
+
+    if (!team) return res.status(404).json({ error: 'Team not found.' });
+
+    const io = req.app.get('io');
+    if (io) io.emit('leaderboard_update');
+
+    console.log(`[ANTI-CHEAT] Team ${team_id} self-disqualified.`);
+    res.json({ success: true, team });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
