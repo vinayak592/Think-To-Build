@@ -34,6 +34,10 @@ const teamSchema = new mongoose.Schema({
   opt_out_timestamp: { type: Date, default: null },
   // Round 1: CLIP image similarity scoring
   round1_images: [round1ImageSchema],
+  round1_breakdown: {
+    innovation: { type: Number, default: 0 },
+    implementation: { type: Number, default: 0 }
+  },
   round1_score: { type: Number, default: 0 },
   round2_breakdown: {
     creativity: { type: Number, default: 0 },

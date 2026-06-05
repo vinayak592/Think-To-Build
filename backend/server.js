@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const EventState = require('./models/EventState');
 const helmet = require('helmet');
 const compression = require('compression');
 
@@ -33,13 +34,13 @@ console.log(`[SERVER] Python binary : ${pythonCmd}`);
 console.log(`[SERVER] Spawning Flask service...`);
 
 const pythonProcess = spawn(pythonCmd, [flaskAppPath], {
-  cwd: flaskAppDir,          // run Flask from its own directory
-  stdio: 'inherit',
-  shell: false,              // never pass through shell — avoids space-in-path issues
-  env: {
-    ...process.env,
-    PYTHONUNBUFFERED: '1',   // real-time log output
-  }
+  cwd: flaskAppDir,
+  stdio: 'ignore',
+  shell: false,
+  env: Object.assign({}, process.env, {
+  PYTHONUNBUFFERED: '1',
+  PORT: '5000'
+})
 });
 
 pythonProcess.on('error', (err) => {
@@ -94,7 +95,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ===== ROUTES =====
 const apiRoutes = require('./routes/api');
+const judgeRoutes = require('./routes/judge');
 app.use('/api', apiRoutes);
+app.use('/api/judge', judgeRoutes);
 
 // Page routes
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/main.html')));
@@ -146,7 +149,7 @@ io.on('connection', (socket) => {
 });
 
 // ===== START SERVER =====
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.NODE_PORT || 3001; // Use env variable to avoid conflicts
 
 // Set HTTP-level timeouts to prevent slow-client connection pile-up
 server.timeout = 120000;         // 2 min max for any request
@@ -155,6 +158,38 @@ server.headersTimeout = 66000;   // Must be > keepAliveTimeout
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[SERVER] Running on http://localhost:${PORT}`);
+
+  // -------------------
+  // Automatic Event Start
+  // -------------------
+  const eventStartEnv = process.env.EVENT_START_TIME;
+  if (eventStartEnv) {
+    const startTime = new Date(eventStartEnv);
+    const now = new Date();
+    if (isNaN(startTime.getTime())) {
+      console.warn('[SERVER] Invalid EVENT_START_TIME format');
+    } else if (startTime > now) {
+      const delayMs = startTime - now;
+      console.log(`[SERVER] Event scheduled to start at ${startTime.toISOString()} (in ${(delayMs/1000/60).toFixed(2)} minutes)`);
+      setTimeout(async () => {
+        try {
+          // Mimic /event/start logic (admin-only in API, but here we start as system)
+          const state = await EventState.findOneAndUpdate(
+            { key: 'main' },
+            { event_started: true, started_at: new Date(), started_by: 'system' },
+            { upsert: true, returnDocument: 'after' }
+          );
+          const io = app.get('io');
+          if (io) io.emit('event_started');
+          console.log('[SERVER] Automatic event start executed');
+        } catch (err) {
+          console.error('[SERVER] Automatic event start failed:', err.message);
+        }
+      }, delayMs);
+    } else {
+      console.log('[SERVER] EVENT_START_TIME is in the past – event should already be started.');
+    }
+  }
 });
 
 // ===== MONGODB CONNECTION with pool tuning =====
@@ -167,6 +202,26 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/thinktobu
 })
   .then(() => console.log('[DB] Connected to MongoDB'))
   .catch((err) => console.error('[DB] MongoDB connection error:', err.message));
+
+// Seed default judges if not present
+(async () => {
+  const Judge = require('./models/judge');
+  const bcrypt = require('bcryptjs');
+  const judges = [
+    { email: process.env.JUDGE1_EMAIL, password: process.env.JUDGE1_PASSWORD, round: 1 },
+    { email: process.env.JUDGE2_EMAIL, password: process.env.JUDGE2_PASSWORD, round: 2 }
+  ];
+  for (const j of judges) {
+    if (!j.email) continue;
+    const exists = await Judge.findOne({ email: j.email });
+    if (!exists) {
+      const salt = await bcrypt.genSalt(10);
+      const hash = await bcrypt.hash(j.password, salt);
+      await Judge.create({ email: j.email, passwordHash: hash, round: j.round });
+      console.log(`[SEED] Created judge ${j.email} for round ${j.round}`);
+    }
+  }
+})();
 
 // Reconnect automatically on dropped connection
 mongoose.connection.on('disconnected', () => {

@@ -6,6 +6,8 @@ socket.on('leaderboard_update', () => fetchLeaderboard());
 const leaderboardBody = document.getElementById('leaderboard-body');
 let teamsData = [];
 let judgeToken = localStorage.getItem('techfusion_judge_token');
+let judgeRound = parseInt(localStorage.getItem('techfusion_judge_round')) || 1;
+let judgeEmail = localStorage.getItem('techfusion_judge_email') || 'judge';
 
 function clampRubricScore(value, fallback = 0) {
   const num = Number(value);
@@ -17,30 +19,53 @@ function roundTo2(value) {
   return Math.round(value * 100) / 100;
 }
 
-function getRubricBreakdown(team) {
-  const baseFallback = clampRubricScore((Number(team.round2_score) || 0) / 2, 0);
-  const breakdown = team.round2_breakdown || {};
-
-  return {
-    creativity: clampRubricScore(breakdown.creativity, baseFallback),
-    accuracy: clampRubricScore(breakdown.accuracy, baseFallback)
-  };
-}
-
-function calculateRound2ScoreFromRubric(breakdown) {
-  return roundTo2(breakdown.creativity + breakdown.accuracy);
-}
-
 // Redirect to login if no token
 if (!judgeToken) {
   window.location.href = '/judge';
 }
 
+// Update UI headers based on the current judge round
+function setupHeaders() {
+  const headerRow = document.querySelector('.leaderboard-table thead tr');
+  if (!headerRow) return;
+
+  if (judgeRound === 1) {
+    headerRow.innerHTML = `
+      <th style="width: 80px;">Rank</th>
+      <th style="width: 250px;">Team ID & Participant</th>
+      <th style="width: 220px;">Submissions</th>
+      <th>Innovation 💡 (0-50)</th>
+      <th>Implementation ⚙️ (0-50)</th>
+      <th>Round 1 Total (0-100)</th>
+    `;
+    document.querySelector('.judge-title p').textContent = 'Evaluation Phase: Round 1 (Innovation & Implementation)';
+    document.querySelector('.judge-title p[style*="Total Score"]').textContent = 'Round 1 Score = Innovation + Implementation';
+  } else {
+    headerRow.innerHTML = `
+      <th style="width: 80px;">Rank</th>
+      <th style="width: 220px;">Team ID & Participant</th>
+      <th style="width: 150px;">Submissions</th>
+      <th>Round 1 Score</th>
+      <th>Feasibility 🎯 (0-50)</th>
+      <th>Impact 🚀 (0-50)</th>
+      <th>Round 2 Score</th>
+      <th>Final Score (0-200)</th>
+
+    `;
+    document.querySelector('.judge-title p').textContent = 'Evaluation Phase: Round 2 (Feasibility & Impact)';
+    document.querySelector('.judge-title p[style*="Total Score"]').textContent = 'Final Score = Round 1 Score + Round 2 Score';
+  }
+
+  // Display judge info
+  const infoEl = document.createElement('p');
+  infoEl.style.cssText = 'font-size: 0.85rem; color: #a78bfa; margin-top: 4px;';
+  infoEl.textContent = `Logged in as: ${judgeEmail} (Round ${judgeRound} Judge)`;
+  document.querySelector('.judge-title').appendChild(infoEl);
+}
+
 // Fetch and render leaderboard
 async function fetchLeaderboard() {
   console.log('Fetching leaderboard data...');
-  const contentEl = document.getElementById('leaderboard-content');
-  
   if (!judgeToken) {
     console.error('No judge token found in localStorage');
     window.location.href = '/judge';
@@ -54,8 +79,6 @@ async function fetchLeaderboard() {
       }
     });
 
-    console.log('Leaderboard fetch response status:', res.status);
-
     if (res.status === 401 || res.status === 403) {
       console.warn('Unauthorized access, logging out...');
       logout();
@@ -67,7 +90,6 @@ async function fetchLeaderboard() {
     }
 
     teamsData = await res.json();
-    console.log(`Successfully fetched ${teamsData.length} teams.`);
     renderLeaderboard();
   } catch (err) {
     console.error('Failed to fetch leaderboard:', err);
@@ -84,83 +106,169 @@ async function fetchLeaderboard() {
 function renderLeaderboard() {
   leaderboardBody.innerHTML = '';
   
-  // Filter out disqualified or unqualified teams
-  const qualifiedTeams = teamsData.filter(team => team.qualified && !team.disqualified);
+  // Show all teams regardless of disqualification or qualification
+  let qualifiedTeams = [];
+  if (judgeRound === 1) {
+    // Round 1 shows all registered teams
+    qualifiedTeams = teamsData;
+  } else {
+    // Round 2 also shows all registered teams
+    qualifiedTeams = teamsData;
+  }
 
-  // Sort by total score descending
+  // Sort by appropriate score descending
   qualifiedTeams.sort((a, b) => {
-    const aRound2 = calculateRound2ScoreFromRubric(getRubricBreakdown(a));
-    const bRound2 = calculateRound2ScoreFromRubric(getRubricBreakdown(b));
-    return bRound2 - aRound2;
+    if (judgeRound === 1) {
+      return (b.round1_score || 0) - (a.round1_score || 0);
+    } else {
+      const finalA = (a.round1_score || 0) + (a.round2_score || 0);
+      const finalB = (b.round1_score || 0) + (b.round2_score || 0);
+      return finalB - finalA;
+    }
   });
 
   qualifiedTeams.forEach((team, index) => {
-    const rubric = getRubricBreakdown(team);
-    const totalScore = calculateRound2ScoreFromRubric(rubric);
-
     const tr = document.createElement('tr');
-    tr.className = `team-row ${team.disqualified ? 'disqualified' : ''}`;
+    tr.className = 'team-row';
     
-    tr.innerHTML = `
-      <td>${index + 1}</td>
-      <td>
-        <div class="team-id-cell">${team.team_id}</div>
-        <div style="font-size:0.75rem; color:#8892b0;">${team.participant_name || 'No Participant Name'}</div>
-        <div style="font-size:0.75rem; color:#8892b0;">(${team.team_name || 'No Team Name'})</div>
-      </td>
-      <td>
-        <input type="number" 
-               class="score-input rubric-input"
-               id="rubric-creativity-${team.team_id}"
-               value="${rubric.creativity}" 
-               min="0" max="50" step="0.1"
-               onchange="updateRound2Rubric('${team.team_id}')"
-               ${team.disqualified ? 'disabled' : ''}>
-      </td>
-      <td>
-        <input type="number" 
-               class="score-input rubric-input"
-               id="rubric-accuracy-${team.team_id}"
-               value="${rubric.accuracy}" 
-               min="0" max="50" step="0.1"
-               onchange="updateRound2Rubric('${team.team_id}')"
-               ${team.disqualified ? 'disabled' : ''}>
-      </td>
-      <td><span class="final-score" id="final-total-${team.team_id}">${totalScore.toFixed(2)}</span></td>
-      <td>
-        <span class="badge ${team.disqualified ? 'badge-dq' : 'badge-active'}">
-          ${team.disqualified ? 'DQ' : 'Active'}
-        </span>
-      </td>
-    `;
+    // Render images column
+    let imagesHtml = '<span style="font-size: 0.8rem; color: #4a5578;">No uploads</span>';
+    if (team.round1_images && team.round1_images.length > 0) {
+      imagesHtml = `<div style="display: flex; gap: 6px; flex-wrap: wrap;">`;
+      team.round1_images.forEach((img, i) => {
+        imagesHtml += `
+          <img src="${img.image_path}" 
+               alt="Sub ${i+1}" 
+               style="width: 38px; height: 38px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;"
+               onclick="viewFullImage('${img.image_path}', '${team.team_id}')"
+               title="Score: ${img.score}%">
+        `;
+      });
+      imagesHtml += `</div>`;
+    }
+
+    if (judgeRound === 1) {
+      const innovationVal = team.round1_breakdown?.innovation || 0;
+      const implementationVal = team.round1_breakdown?.implementation || 0;
+      const r1Total = team.round1_score || 0;
+
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td>
+          <div class="team-id-cell">${team.team_id}</div>
+          <div style="font-size:0.85rem; font-weight:600; color:#cbd5e1;">${team.participant_name || 'No Name'}</div>
+          <div style="font-size:0.75rem; color:#8892b0;">${team.team_name || ''}</div>
+        </td>
+        <td>${imagesHtml}</td>
+        <td>
+          <input type="number" 
+                 class="score-input"
+                 id="innovation-${team.team_id}"
+                 value="${innovationVal}" 
+                 min="0" max="50" step="0.5"
+                 onchange="updateScore('${team.team_id}')"
+                 ${team.disqualified ? 'disabled' : ''}>
+        </td>
+        <td>
+          <input type="number" 
+                 class="score-input"
+                 id="implementation-${team.team_id}"
+                 value="${implementationVal}" 
+                 min="0" max="50" step="0.5"
+                 onchange="updateScore('${team.team_id}')">
+        </td>
+        <td><span class="final-score" id="total-${team.team_id}" style="color: #60a5fa;">${r1Total.toFixed(2)}</span></td>
+      `;
+    } else {
+      // Round 2
+      const feasibilityVal = team.round2_breakdown?.creativity || 0;
+      const impactVal = team.round2_breakdown?.accuracy || 0;
+      const r1Total = team.round1_score || 0;
+      const r2Total = team.round2_score || 0;
+      const finalTotal = r1Total + r2Total;
+
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td>
+          <div class="team-id-cell">${team.team_id}</div>
+          <div style="font-size:0.85rem; font-weight:600; color:#cbd5e1;">${team.participant_name || 'No Name'}</div>
+          <div style="font-size:0.75rem; color:#8892b0;">${team.team_name || ''}</div>
+        </td>
+        <td>${imagesHtml}</td>
+        <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; color: #a78bfa;">${r1Total.toFixed(2)}</td>
+        <td>
+          <input type="number" 
+                 class="score-input"
+                 id="feasibility-${team.team_id}"
+                 value="${feasibilityVal}" 
+                 min="0" max="50" step="0.5"
+                 onchange="updateScore('${team.team_id}')"
+                 ${team.disqualified ? 'disabled' : ''}>
+        </td>
+        <td>
+          <input type="number" 
+                 class="score-input"
+                 id="impact-${team.team_id}"
+                 value="${impactVal}" 
+                 min="0" max="50" step="0.5"
+                 onchange="updateScore('${team.team_id}')"
+                 onchange="updateScore('${team.team_id}')">
+        </td>
+        <td><span class="final-score" id="total2-${team.team_id}" style="color: #f472b6;">${r2Total.toFixed(2)}</span></td>
+        <td><span class="final-score" id="grand-total-${team.team_id}" style="color: #34d399; font-size: 1.2rem;">${finalTotal.toFixed(2)}</span></td>
+      `;
+    }
 
     leaderboardBody.appendChild(tr);
   });
 }
 
-async function updateRound2Rubric(teamId) {
-  const creativityInput = document.getElementById(`rubric-creativity-${teamId}`);
-  const accuracyInput = document.getElementById(`rubric-accuracy-${teamId}`);
-  const finalTotalEl = document.getElementById(`final-total-${teamId}`);
+async function updateScore(teamId) {
+  let payload = { team_id: teamId, round: judgeRound };
 
-  if (!creativityInput || !accuracyInput) return;
+  if (judgeRound === 1) {
+    const innovationInput = document.getElementById(`innovation-${teamId}`);
+    const implementationInput = document.getElementById(`implementation-${teamId}`);
+    const totalEl = document.getElementById(`total-${teamId}`);
 
-  const fallbackBreakdown = { creativity: 0, accuracy: 0 };
-  const team = teamsData.find((t) => t.team_id === teamId);
-  const previous = team ? getRubricBreakdown(team) : fallbackBreakdown;
+    if (!innovationInput || !implementationInput) return;
 
-  const payload = {
-    team_id: teamId,
-    creativity: clampRubricScore(creativityInput.value, previous.creativity),
-    accuracy: clampRubricScore(accuracyInput.value, previous.accuracy)
-  };
+    const innovation = clampRubricScore(innovationInput.value);
+    const implementation = clampRubricScore(implementationInput.value);
 
-  creativityInput.value = String(payload.creativity);
-  accuracyInput.value = String(payload.accuracy);
+    innovationInput.value = innovation;
+    implementationInput.value = implementation;
 
-  const optimisticRound2 = calculateRound2ScoreFromRubric(payload);
-  if (finalTotalEl) {
-    finalTotalEl.textContent = optimisticRound2.toFixed(2);
+    payload.innovation = innovation;
+    payload.implementation = implementation;
+
+    // Optimistically update UI
+    if (totalEl) {
+      totalEl.textContent = (innovation + implementation).toFixed(2);
+    }
+  } else {
+    const feasibilityInput = document.getElementById(`feasibility-${teamId}`);
+    const impactInput = document.getElementById(`impact-${teamId}`);
+    const total2El = document.getElementById(`total2-${teamId}`);
+    const grandTotalEl = document.getElementById(`grand-total-${teamId}`);
+
+    if (!feasibilityInput || !impactInput) return;
+
+    const feasibility = clampRubricScore(feasibilityInput.value);
+    const impact = clampRubricScore(impactInput.value);
+
+    feasibilityInput.value = feasibility;
+    impactInput.value = impact;
+
+    // Map Feasibility to creativity, Impact to accuracy in backend schema
+    payload.creativity = feasibility;
+    payload.accuracy = impact;
+
+    // Optimistically update UI
+    const r1Score = parseFloat(teamsData.find(t => t.team_id === teamId)?.round1_score || 0);
+    const r2Total = feasibility + impact;
+    if (total2El) total2El.textContent = r2Total.toFixed(2);
+    if (grandTotalEl) grandTotalEl.textContent = (r1Score + r2Total).toFixed(2);
   }
 
   try {
@@ -184,23 +292,56 @@ async function updateRound2Rubric(teamId) {
 
     const data = await res.json();
     if (!data.success) {
-      throw new Error(data.error || 'Failed to save rubric scores.');
+      throw new Error(data.error || 'Failed to save scores.');
     }
 
-    const updatedTeamIndex = teamsData.findIndex((t) => t.team_id === teamId);
-    if (updatedTeamIndex !== -1) {
-      teamsData[updatedTeamIndex] = data.team;
+    // Update local data
+    const idx = teamsData.findIndex(t => t.team_id === teamId);
+    if (idx !== -1) {
+      teamsData[idx] = data.team;
     }
-
-    renderLeaderboard();
   } catch (err) {
     console.error('Failed to update rubric score:', err);
     fetchLeaderboard();
   }
 }
 
+// Modal for viewing image full size
+function viewFullImage(src, teamId) {
+  let modal = document.getElementById('image-view-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'image-view-modal';
+    modal.style.cssText = 'position: fixed; inset: 0; z-index: 10000; background: rgba(5,10,24,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;';
+    modal.onclick = () => modal.style.display = 'none';
+    
+    const img = document.createElement('img');
+    img.id = 'modal-image-content';
+    img.style.cssText = 'max-width: 90%; max-height: 80%; border-radius: 12px; border: 2px solid rgba(96,165,250,0.3); object-fit: contain; margin-bottom: 20px;';
+    
+    const title = document.createElement('h3');
+    title.id = 'modal-image-title';
+    title.style.cssText = 'color: #fff; font-family: Orbitron, sans-serif; letter-spacing: 1px;';
+    
+    const closeMsg = document.createElement('p');
+    closeMsg.style.cssText = 'color: #8892b0; font-size: 0.8rem; margin-top: 10px;';
+    closeMsg.textContent = 'Click anywhere to close';
+
+    modal.appendChild(img);
+    modal.appendChild(title);
+    modal.appendChild(closeMsg);
+    document.body.appendChild(modal);
+  }
+  
+  document.getElementById('modal-image-content').src = src;
+  document.getElementById('modal-image-title').textContent = `Submission for Team: ${teamId}`;
+  modal.style.display = 'flex';
+}
+
 function logout() {
   localStorage.removeItem('techfusion_judge_token');
+  localStorage.removeItem('techfusion_judge_round');
+  localStorage.removeItem('techfusion_judge_email');
   window.location.href = '/judge';
 }
 
@@ -209,14 +350,13 @@ function exportPDF() {
   const element = document.getElementById('leaderboard-content');
   const opt = {
     margin:       10,
-    filename:     'think-to-build-leaderboard.pdf',
+    filename:     `think-to-build-round-${judgeRound}-leaderboard.pdf`,
     image:        { type: 'jpeg', quality: 0.98 },
     html2canvas:  { scale: 2, backgroundColor: '#050a18' },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
   };
   html2pdf().set(opt).from(element).save();
 }
-
 
 // Particles from main (simplified version)
 function initParticles() {
@@ -264,6 +404,7 @@ function initParticles() {
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Judge Dashboard Initialized');
+  setupHeaders();
   initParticles();
   if (judgeToken) {
     fetchLeaderboard();

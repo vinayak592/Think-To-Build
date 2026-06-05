@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Think to Build | Admin Panel</title>
   <link rel="stylesheet" href="main.css">
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
   <style>
     .admin-login-card {
       max-width: 460px;
@@ -15,6 +18,7 @@
       position: relative;
       z-index: 10;
     }
+
     .role-badge {
       display: inline-flex;
       align-items: center;
@@ -31,10 +35,12 @@
       margin-bottom: 20px;
       font-family: var(--font-mono);
     }
+
     .form-group {
       text-align: left;
       margin-bottom: 20px;
     }
+
     .form-group label {
       display: block;
       margin-bottom: 8px;
@@ -42,6 +48,7 @@
       font-weight: 500;
       color: var(--text-secondary);
     }
+
     .error-msg {
       color: #f87171;
       background: rgba(239, 68, 68, 0.1);
@@ -55,10 +62,19 @@
       font-weight: 500;
       animation: fadeIn 0.3s ease;
     }
+
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-5px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
+
     .back-home-link {
       color: var(--blue-400);
       font-weight: 500;
@@ -68,6 +84,7 @@
       align-items: center;
       gap: 6px;
     }
+
     .back-home-link:hover {
       color: var(--blue-500);
       transform: translateX(-3px);
@@ -81,10 +98,12 @@
       position: relative;
       z-index: 10;
     }
+
     .event-control-card {
       text-align: center;
       margin-bottom: 30px;
     }
+
     .event-status {
       font-size: 1.1rem;
       margin: 20px auto;
@@ -98,22 +117,26 @@
       gap: 10px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     }
+
     .event-status.stopped {
       background: rgba(239, 68, 68, 0.08);
       border: 1px solid rgba(239, 68, 68, 0.2);
       color: #f87171;
     }
+
     .event-status.started {
       background: rgba(52, 211, 153, 0.08);
       border: 1px solid rgba(52, 211, 153, 0.2);
       color: #34d399;
     }
+
     .event-btn-group {
       display: flex;
       gap: 16px;
       justify-content: center;
       margin-top: 24px;
     }
+
     .btn-start {
       background: linear-gradient(135deg, var(--emerald-400), #059669);
       padding: 14px 40px;
@@ -122,10 +145,12 @@
       font-weight: 600;
       transition: all 0.3s ease;
     }
+
     .btn-start:hover {
       box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
       transform: translateY(-2px);
     }
+
     .btn-stop {
       background: linear-gradient(135deg, #ef4444, #dc2626);
       padding: 14px 40px;
@@ -134,10 +159,12 @@
       font-weight: 600;
       transition: all 0.3s ease;
     }
+
     .btn-stop:hover {
       box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
       transform: translateY(-2px);
     }
+
     .btn-view-leaderboard {
       background: rgba(96, 165, 250, 0.1);
       border: 1px solid rgba(96, 165, 250, 0.2);
@@ -147,11 +174,13 @@
       padding: 12px 24px;
       transition: all 0.3s ease;
     }
+
     .btn-view-leaderboard:hover {
       background: rgba(96, 165, 250, 0.2);
       border-color: var(--blue-400);
       transform: translateY(-2px);
     }
+
     .admin-info {
       display: flex;
       justify-content: space-between;
@@ -164,10 +193,12 @@
       padding: 20px 30px;
       border-radius: 16px;
     }
+
     .admin-info .admin-name {
       color: var(--blue-400);
       font-weight: 600;
     }
+
     .btn-logout {
       background: rgba(239, 68, 68, 0.1);
       border: 1px solid rgba(239, 68, 68, 0.2);
@@ -179,11 +210,13 @@
       transition: all 0.3s ease;
       cursor: pointer;
     }
+
     .btn-logout:hover {
       background: rgba(239, 68, 68, 0.2);
       border-color: #ef4444;
       transform: translateY(-2px);
     }
+
     .pulse-dot-live {
       display: inline-block;
       width: 10px;
@@ -194,10 +227,21 @@
       animation: pulse-green 2s infinite;
       margin-right: 8px;
     }
+
     @keyframes pulse-green {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.3); opacity: 0.6; }
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.3);
+        opacity: 0.6;
+      }
     }
+
     .pulse-dot-off {
       display: inline-block;
       width: 10px;
@@ -209,6 +253,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- Animated Background Canvas -->
@@ -239,11 +284,13 @@
     </nav>
 
     <!-- Login Card -->
-    <div class="container" id="login-section" style="flex: 1; display: flex; align-items: center; justify-content: center;">
+    <div class="container" id="login-section"
+      style="flex: 1; display: flex; align-items: center; justify-content: center;">
       <div class="glass-card admin-login-card" id="admin-login-card">
         <span class="role-badge">🔒 Admin Access</span>
         <h1>Admin Login</h1>
-        <p style="margin-bottom: 30px; color: var(--text-secondary);">Enter your admin credentials to manage the event.</p>
+        <p style="margin-bottom: 30px; color: var(--text-secondary);">Enter your admin credentials to manage the event.
+        </p>
 
         <div id="error-msg" class="error-msg"></div>
 
@@ -251,30 +298,35 @@
           <div class="form-group">
             <label>Email Address</label>
             <div class="input-group">
-              <input type="email" id="admin-email" placeholder="admin@email.com" required>
+              <input type="email" id="admin-email" placeholder="admin456@gmail.com" required>
               <svg class="input-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
               </svg>
             </div>
           </div>
-          
+
           <div class="form-group">
             <label>Password</label>
             <div class="input-group">
-              <input type="password" id="admin-password" placeholder="••••••••" required>
+              <input type="password" id="admin-password" placeholder="admin456" required>
               <svg class="input-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
-              <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('admin-password', 'eye-icon')">
+              <button type="button" class="btn-toggle-password"
+                onclick="togglePasswordVisibility('admin-password', 'eye-icon')">
                 <svg id="eye-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </button>
             </div>
           </div>
 
-          <button type="submit" class="btn-premium" style="width: 100%; margin-top: 16px; background: linear-gradient(135deg, #ef4444, #f472b6) !important; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25) !important;">
+          <button type="submit" class="btn-premium"
+            style="width: 100%; margin-top: 16px; background: linear-gradient(135deg, #ef4444, #f472b6) !important; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25) !important;">
             Login as Admin
             <div class="btn-shine"></div>
           </button>
@@ -290,65 +342,60 @@
     <div class="container admin-dashboard" id="admin-dashboard">
       <div class="admin-info">
         <div>
-          <h1 style="font-size: 1.8rem; margin: 0; background: linear-gradient(to right, var(--blue-400), var(--purple-400)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Admin Control Center</h1>
+          <h1
+            style="font-size: 1.8rem; margin: 0; background: linear-gradient(to right, var(--blue-400), var(--purple-400)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Admin Control Center</h1>
           <p style="margin-top: 4px;">Logged in as <span class="admin-name" id="admin-email-display">admin</span></p>
         </div>
+        <a href="/api/leaderboard/excel" class="btn-view-leaderboard"
+          style="background: rgba(128, 0, 128, 0.1); border: 1px solid rgba(128, 0, 128, 0.2); color: #800080; margin-left: 10px;">Download
+          Excel</a>
         <button class="btn-logout" onclick="logout()">Logout</button>
       </div>
 
-      <!-- Event Control -->
-      <div class="glass-card event-control-card">
-        <h2 style="margin-bottom: 8px; font-family: var(--font-display);">Competition Status</h2>
-        <p style="color: var(--text-secondary);">Start or pause the AI Image Generation battleground</p>
-
-        <div class="event-status stopped" id="event-status-display">
-          <span class="pulse-dot-off" id="status-dot"></span>
-          <strong id="status-text">Event is NOT started</strong>
-        </div>
-
-        <div class="event-btn-group">
-          <button class="btn-start" id="btn-start-event" onclick="startEvent()">
-            ▶ Start Event
-          </button>
-          <button class="btn-stop" id="btn-stop-event" onclick="stopEvent()" style="display: none;">
-            ⏹ Stop Event
-          </button>
-        </div>
-      </div>
+      
 
 
       <!-- Leaderboard below -->
       <div class="glass-card" style="margin-bottom: 40px;">
-        <div class="controls">
-          <button onclick="window.open('/api/admin', '_blank')" class="btn-view-leaderboard">Open Leaderboard Tab →</button>
+        <div class="controls"
+          style="margin-top: 10px; margin-bottom: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <button onclick="window.open('/api/admin', '_blank')" class="btn-view-leaderboard"
+            style="margin-top: 0; padding: 12px 24px; border-radius: 8px;">Open Leaderboard Tab →</button>
         </div>
 
         <h3 style="margin-bottom: 16px; font-family: var(--font-display);">Real-time Leaderboard Preview</h3>
-        <table class="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Team Name</th>
-              <th>Total Score (0-100)</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboard-body">
-            <!-- Populated by JS -->
-          </tbody>
-        </table>
+        <div id="leaderboard-content">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Team ID & Name</th>
+                <th>Round 1 (Innovation 💡 / Implementation ⚙️)</th>
+                <th>Round 2 (Feasibility 🎯 / Impact 🚀)</th>
+                <th>Grand Total (0-200)</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <!-- Footer -->
-    <footer class="main-footer" style="margin-top: auto; padding: 20px 0; border-top: 1px solid var(--border-subtle); background: rgba(5, 10, 24, 0.4); backdrop-filter: blur(10px);">
-      <div class="footer-content" style="max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <footer class="main-footer"
+      style="margin-top: auto; padding: 20px 0; border-top: 1px solid var(--border-subtle); background: rgba(5, 10, 24, 0.4); backdrop-filter: blur(10px);">
+      <div class="footer-content"
+        style="max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div class="footer-brand" style="display: flex; align-items: center; gap: 8px;">
           <span class="nav-logo-icon" style="font-size: 1rem;">⚡</span>
-          <span class="nav-logo-text" style="font-size: 0.9rem; letter-spacing: 2px;">THINK<span class="accent">TO BUILD</span></span>
+          <span class="nav-logo-text" style="font-size: 0.9rem; letter-spacing: 2px;">THINK<span class="accent">TO
+              BUILD</span></span>
         </div>
-        <p class="footer-text" style="font-size: 0.8rem; color: var(--text-muted);">© 2026 Think to Build. All rights reserved.</p>
+        <p class="footer-text" style="font-size: 0.8rem; color: var(--text-muted);">© 2026 Think to Build. All rights
+          reserved.</p>
       </div>
     </footer>
 
@@ -357,6 +404,7 @@
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="main.js"></script>
   <script>
     const socket = io();
@@ -393,6 +441,7 @@
     // Login Form
     document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      console.log('Login attempt initiated...');
       const email = document.getElementById('admin-email').value.trim();
       const password = document.getElementById('admin-password').value.trim();
       const errorEl = document.getElementById('error-msg');
@@ -407,15 +456,18 @@
         const data = await res.json();
 
         if (data.success) {
+          console.log('Login successful.');
           localStorage.setItem('techfusion_admin_token', data.token);
           localStorage.setItem('techfusion_admin_email', email);
           adminToken = data.token;
           showDashboard();
         } else {
+          console.error('Login error:', data.error);
           errorEl.textContent = data.error || 'Login failed.';
           errorEl.style.display = 'block';
         }
       } catch (err) {
+        console.error('System login failure:', err);
         errorEl.textContent = 'Network error. Try again.';
         errorEl.style.display = 'block';
       }
@@ -528,6 +580,8 @@
       }
     }
 
+    let teamsDataGlobal = [];
+
     // Quick Leaderboard
     async function fetchLeaderboard() {
       if (!adminToken) return;
@@ -539,13 +593,17 @@
         if (res.status === 401 || res.status === 403) return logout();
 
         const teams = await res.json();
+        teamsDataGlobal = teams; // Save globally for PDF export
         const body = document.getElementById('leaderboard-body');
         body.innerHTML = '';
 
+        // Sort by final score (Round 1 + Round 2) descending
         teams.sort((a, b) => {
           if (a.disqualified && !b.disqualified) return 1;
           if (!a.disqualified && b.disqualified) return -1;
-          return (b.round2_score || 0) - (a.round2_score || 0);
+          const scoreA = (a.round1_score || 0) + (a.round2_score || 0);
+          const scoreB = (b.round1_score || 0) + (b.round2_score || 0);
+          return scoreB - scoreA;
         });
 
         teams.forEach((team, i) => {
@@ -572,13 +630,18 @@
             actionButton = `<button class="btn btn-success btn-sm" onclick="qualifyTeam('${team.team_id}')">Qualify</button>`;
           }
 
+          const r1 = team.round1_score || 0;
+          const r2 = team.round2_score || 0;
+          const grand = r1 + r2;
+
+
           tr.innerHTML = `
-            <td>${i + 1}</td>
-            <td><strong>${team.team_id}</strong><br><span style="font-size:0.75rem;color:var(--text-secondary);">${team.participant_name || ''} (${team.team_name || ''})</span></td>
-            <td>${(team.round2_score || 0).toFixed(2)}</td>
-            <td>${statusBadge}</td>
-            <td>${actionButton}</td>
-          `;
+              <td>${i + 1}</td>
+              <td><strong>${team.team_id}</strong><br><span style="font-size:0.75rem;color:var(--text-secondary);">${team.participant_name || ''} (${team.team_name || ''})</span></td>
+              <td style="font-family: 'JetBrains Mono', monospace;">${r1.toFixed(2)}</td>
+              <td style="font-family: 'JetBrains Mono', monospace;">${r2.toFixed(2)}</td>
+              <td style="font-family: 'JetBrains Mono', monospace;"><strong style="color: #34d399; font-size: 1.05rem;">${grand.toFixed(2)}</strong></td>
+            `;
           body.appendChild(tr);
         });
       } catch (err) {
@@ -586,10 +649,83 @@
       }
     }
 
+    // PDF Export of official scoreboard report
+    function exportScoresPDF() {
+      if (!teamsDataGlobal || teamsDataGlobal.length === 0) {
+        alert("No team scores available to export.");
+        return;
+      }
+
+      // Create an off‑screen container for the PDF content
+      const printContainer = document.createElement('div');
+      printContainer.style.cssText = 'padding: 40px; background: #050a18; color: #f0f4ff; font-family: "Inter", sans-serif;';
+
+      // Build the HTML inside the container
+      printContainer.innerHTML = `
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="font-family: 'Orbitron', sans-serif; color: #60a5fa; margin: 0; font-size: 2.2rem; letter-spacing: 2px;">THINK TO BUILD</h1>
+          <p style="color: #a78bfa; margin: 8px 0 0 0; font-size: 1.1rem; font-family: 'Orbitron', sans-serif; letter-spacing: 1.5px;">OFFICIAL EVENT SCOREBOARD REPORT</p>
+          <p style="color: #8892b0; font-size: 0.85rem; margin-top: 8px;">Generated: ${new Date().toLocaleString()}</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 25px; font-size: 0.95rem; background: rgba(10, 17, 40, 0.4); border-radius: 12px; overflow: hidden; border: 1px solid rgba(96, 165, 250, 0.1);">
+          <thead>
+            <tr style="background: rgba(96, 165, 250, 0.15); border-bottom: 2px solid rgba(96, 165, 250, 0.25);">
+              <th style="padding: 14px 18px; text-align: left; color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-transform: uppercase;">Rank</th>
+              <th style="padding: 14px 18px; text-align: left; color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-transform: uppercase;">Team ID</th>
+              <th style="padding: 14px 18px; text-align: left; color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-transform: uppercase;">Team Name</th>
+              <th style="padding: 14px 18px; text-align: left; color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-transform: uppercase;">Participant Name</th>
+              <th style="padding: 14px 18px; text-align: right; color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-transform: uppercase;">Round 1 Score</th>
+              <th style="padding: 14px 18px; text-align: right; color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-transform: uppercase;">Round 2 Score</th>
+              <th style="padding: 14px 18px; text-align: right; color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-transform: uppercase;">Grand Total</th>
+              <th style="padding: 14px 18px; text-align: center; color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; text-transform: uppercase;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${teamsDataGlobal.map((team, index) => {
+        const r1 = team.round1_score || 0;
+        const r2 = team.round2_score || 0;
+        const total = r1 + r2;
+        const status = team.disqualified ? 'DQ' : (team.qualified ? 'Qualified' : 'Pending');
+        const statusColor = team.disqualified ? '#ef4444' : (team.qualified ? '#34d399' : '#f59e0b');
+
+        return `
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); background: ${index % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'};">
+                  <td style="padding: 12px 18px; color: #cbd5e1; font-weight: bold;">${index + 1}</td>
+                  <td style="padding: 12px 18px; font-family: 'JetBrains Mono', monospace; color: #60a5fa; font-weight: bold;">${team.team_id}</td>
+                  <td style="padding: 12px 18px; color: #cbd5e1; font-weight: 500;">${team.team_name || 'N/A'}</td>
+                  <td style="padding: 12px 18px; color: #cbd5e1;">${team.participant_name || 'N/A'}</td>
+                  <td style="padding: 12px 18px; text-align: right; font-family: 'JetBrains Mono', monospace; color: #cbd5e1;">${r1.toFixed(2)}</td>
+                  <td style="padding: 12px 18px; text-align: right; font-family: 'JetBrains Mono', monospace; color: #cbd5e1;">${r2.toFixed(2)}</td>
+                  <td style="padding: 12px 18px; text-align: right; font-family: 'JetBrains Mono', monospace; color: #34d399; font-weight: bold; font-size: 1.1rem;">${total.toFixed(2)}</td>
+                  <td style="padding: 12px 18px; text-align: center; color: ${statusColor}; font-weight: bold; font-size: 0.85rem;">${status}</td>
+                </tr>
+              `;
+      }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      // Append to DOM (off‑screen) so html2pdf can capture it
+      document.body.appendChild(printContainer);
+
+      const opt = {
+        margin: 15,
+        filename: 'think-to-build-official-results.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, backgroundColor: '#050a18' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      };
+
+      // Generate PDF and then clean up the temporary element
+      html2pdf().set(opt).from(printContainer).save().then(() => {
+        document.body.removeChild(printContainer);
+      });
+    }
+
     // Qualify management
     async function qualifyTeam(teamId) {
       if (!confirm(`Are you sure you want to qualify team ${teamId}? This will make them visible to the judges.`)) return;
-      
+
       const token = localStorage.getItem('techfusion_admin_token');
       try {
         const res = await fetch('/api/admin/qualify-team', {
@@ -621,7 +757,7 @@
 
     async function unqualifyTeam(teamId) {
       if (!confirm(`Are you sure you want to disqualify/unqualify team ${teamId}? This will hide them from the judges.`)) return;
-      
+
       const token = localStorage.getItem('techfusion_admin_token');
       try {
         const res = await fetch('/api/admin/unqualify-team', {
@@ -653,7 +789,7 @@
 
     async function clearDisqualification(teamId) {
       if (!confirm(`Are you sure you want to clear disqualification for team ${teamId}? This will allow them to use their upload attempts.`)) return;
-      
+
       const token = localStorage.getItem('techfusion_admin_token');
       try {
         const res = await fetch('/api/admin/clear-disqualification', {
@@ -686,4 +822,5 @@
   </script>
 
 </body>
+
 </html>
