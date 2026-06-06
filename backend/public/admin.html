@@ -374,6 +374,8 @@
                 <th>Round 1 (Innovation 💡 / Implementation ⚙️)</th>
                 <th>Round 2 (Feasibility 🎯 / Impact 🚀)</th>
                 <th>Grand Total (0-200)</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="leaderboard-body">
@@ -641,6 +643,8 @@
               <td style="font-family: 'JetBrains Mono', monospace;">${r1.toFixed(2)}</td>
               <td style="font-family: 'JetBrains Mono', monospace;">${r2.toFixed(2)}</td>
               <td style="font-family: 'JetBrains Mono', monospace;"><strong style="color: #34d399; font-size: 1.05rem;">${grand.toFixed(2)}</strong></td>
+              <td>${statusBadge}</td>
+              <td>${actionButton}</td>
             `;
           body.appendChild(tr);
         });

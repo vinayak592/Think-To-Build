@@ -10,7 +10,8 @@ const EventState = require('../models/EventState');
 const { compareImages } = require('../services/clip');
 const axios = require('axios');
 const FormData = require('form-data');
-const MAX_TEAMS = parseInt(process.env.MAX_TEAMS) || 50;
+const MAX_TEAMS = parseInt(process.env.MAX_TEAMS) || 30;
+const REGISTRATION_DEADLINE = new Date('2026-06-12T00:00:00+05:30'); // End of Thursday, June 11, 2026
 const multer = require('multer');
 
 // ===== MULTER CONFIGURATION =====
@@ -173,12 +174,24 @@ function roundTo2(value) {
 router.get('/registration-status', async (req, res) => {
   try {
     const teamCount = await Team.countDocuments();
-    const isOpen = teamCount < MAX_TEAMS;
+    const isBelowLimit = teamCount < MAX_TEAMS;
+    const isBeforeDeadline = new Date() < REGISTRATION_DEADLINE;
+    const isOpen = isBelowLimit && isBeforeDeadline;
+
+    let message = '';
+    if (!isOpen) {
+      if (!isBelowLimit) {
+        message = `Registration is closed. Maximum ${MAX_TEAMS} teams allowed.`;
+      } else {
+        message = 'Registration closed on Thursday, June 11, 2026.';
+      }
+    }
+
     res.json({
       open: isOpen,
-      teamCount,
+      teamCount: Math.min(teamCount, MAX_TEAMS),
       maxTeams: MAX_TEAMS,
-      message: isOpen ? '' : `Registration is closed. Maximum ${MAX_TEAMS} teams allowed.`
+      message
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -191,6 +204,9 @@ router.post('/register', async (req, res) => {
     const teamCount = await Team.countDocuments();
     if (teamCount >= MAX_TEAMS) {
       return res.status(400).json({ error: `Registration is closed. Maximum ${MAX_TEAMS} teams allowed.` });
+    }
+    if (new Date() >= REGISTRATION_DEADLINE) {
+      return res.status(400).json({ error: 'Registration is closed. The deadline of Thursday, June 11, 2026 has passed.' });
     }
 
     const { email, team_name, participant_name, phone_number, member_count, members } = req.body;
@@ -803,154 +819,28 @@ router.get('/team/:team_id/images', async (req, res) => {
   }
 });
 
-// ===== ADMIN: UPLOAD TARGET IMAGE =====
-router.post('/admin/upload-target', authenticateToken, authorizeRoles('admin'), (req, res) => {
-  uploadTargetImage(req, res, (multerErr) => {
-    try {
-      if (multerErr) {
-        throw new Error(`Upload error: ${multerErr.message}`);
-      }
-
-      if (!req.file) {
-        throw new Error('No target image uploaded.');
-      }
-
-      console.log(`Target image uploaded: ${req.file.path}`);
-      res.json({
-        success: true,
-        message: 'Target image uploaded successfully.',
-        path: `/uploads/reference/${req.file.filename}`
-      });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-});
-
-// Admin/Judge Score Update
-router.post('/admin/score', authenticateToken, authorizeRoles('admin', 'judge'), async (req, res) => {
+// Self-disqualify (called by anti-cheat in team.js)
+router.post('/disqualify', authenticateToken, async (req, res) => {
   try {
-    const { team_id, round, round1_score, round2_score, innovation, implementation, creativity, accuracy } = req.body;
-
+    const team_id = req.user.team_id;
     if (!team_id) {
-      return res.status(400).json({ error: 'team_id is required.' });
+      return res.status(403).json({ error: 'Team token required.' });
     }
-
-    const existingTeam = await Team.findOne({ team_id });
-    if (!existingTeam) {
-      return res.status(404).json({ error: 'Team not found.' });
-    }
-
-    // Determine target round: either explicitly passed, or inferred from judge token, or inferred from input fields
-    let targetRound = round;
-    if (req.user && req.user.role === 'judge') {
-      targetRound = req.user.round;
-    }
-    if (!targetRound) {
-      // Infer from input fields
-      if (innovation !== undefined || implementation !== undefined || round1_score !== undefined) {
-        targetRound = 1;
-      } else {
-        targetRound = 2;
-      }
-    }
-
-    const updateFields = {};
-
-    if (targetRound === 1) {
-      const existingFallbackCriterion = clampNumber((existingTeam.round1_score || 0) / 2, 0, 50, 0);
-      const existingBreakdown = {
-        innovation: clampNumber(existingTeam.round1_breakdown?.innovation, 0, 50, existingFallbackCriterion),
-        implementation: clampNumber(existingTeam.round1_breakdown?.implementation, 0, 50, existingFallbackCriterion)
-      };
-
-      const hasRubricInput = [innovation, implementation].some(value => value !== undefined);
-      let nextBreakdown = { ...existingBreakdown };
-
-      if (hasRubricInput) {
-        if (innovation !== undefined) {
-          nextBreakdown.innovation = clampNumber(innovation, 0, 50, existingBreakdown.innovation);
-        }
-        if (implementation !== undefined) {
-          nextBreakdown.implementation = clampNumber(implementation, 0, 50, existingBreakdown.implementation);
-        }
-      } else if (round1_score !== undefined) {
-        const normalizedScore = clampNumber(round1_score, 0, 100, 0);
-        const criterionEquivalent = roundTo2(normalizedScore / 2);
-        nextBreakdown = {
-          innovation: criterionEquivalent,
-          implementation: criterionEquivalent
-        };
-      }
-
-      const computedRound1Score = roundTo2(nextBreakdown.innovation + nextBreakdown.implementation);
-      updateFields.round1_breakdown = nextBreakdown;
-      updateFields.round1_score = computedRound1Score;
-      updateFields.best_score = computedRound1Score;
-    } else {
-      // Round 2
-      const existingFallbackCriterion = clampNumber((existingTeam.round2_score || 0) / 2, 0, 50, 0);
-      const existingBreakdown = {
-        creativity: clampNumber(existingTeam.round2_breakdown?.creativity, 0, 50, existingFallbackCriterion),
-        accuracy: clampNumber(existingTeam.round2_breakdown?.accuracy, 0, 50, existingFallbackCriterion)
-      };
-
-      const hasRubricInput = [creativity, accuracy].some(value => value !== undefined);
-      let nextBreakdown = { ...existingBreakdown };
-
-      if (hasRubricInput) {
-        if (creativity !== undefined) {
-          nextBreakdown.creativity = clampNumber(creativity, 0, 50, existingBreakdown.creativity);
-        }
-        if (accuracy !== undefined) {
-          nextBreakdown.accuracy = clampNumber(accuracy, 0, 50, existingBreakdown.accuracy);
-        }
-      } else if (round2_score !== undefined) {
-        const normalizedScore = clampNumber(round2_score, 0, 100, 0);
-        const criterionEquivalent = roundTo2(normalizedScore / 2);
-        nextBreakdown = {
-          creativity: criterionEquivalent,
-          accuracy: criterionEquivalent
-        };
-      }
-
-      const computedRound2Score = roundTo2(nextBreakdown.creativity + nextBreakdown.accuracy);
-      updateFields.round2_breakdown = nextBreakdown;
-      updateFields.round2_score = computedRound2Score;
-    }
-
-    const updatedTeam = await Team.findOneAndUpdate(
+    const team = await Team.findOneAndUpdate(
       { team_id },
-      { $set: updateFields },
+      { disqualified: true, disqualified_at: new Date() },
       { returnDocument: 'after' }
     );
-
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found.' });
+    }
     const io = req.app.get('io');
     if (io) io.emit('leaderboard_update');
-
-    res.json({ success: true, team: updatedTeam });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ===== TEAM DETAILS & IMAGES =====
-
-// Show team registration details
-router.get('/team/:team_id/registration', async (req, res) => {
-  try {
-    const team = await Team.findOne({ team_id: req.params.team_id })
-      .select('team_id team_name participant_name email round1_score disqualified qualified warnings upload_attempts_used');
-    if (!team) return res.status(404).json({ error: 'Team not found' });
     res.json({ success: true, team });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
-
-
-
-// Self-disqualify (called by anti-cheat in team.js)
 
 
 // Excel export of leaderboard with proper columns

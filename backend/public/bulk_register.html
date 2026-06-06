@@ -33,10 +33,11 @@
         const email = `bulk${i}_${Date.now()}@example.com`;
         const payload = {
           email,
-          team_name: `Bulk Team ${i}`,
-          participant_name: `Participant ${i}`
+          team_name: `Bulk Team ${i}_${Date.now()}`,
+          participant_name: `Participant ${i}`,
+          phone_number: `123456` + String(1000 + i)
         };
-        const p = fetch('http://localhost:3005/api/register', {
+        const p = fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

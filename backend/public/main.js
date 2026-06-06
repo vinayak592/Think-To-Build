@@ -183,7 +183,7 @@
 
   // Fetch live team count, then trigger counters when hero is visible
   let countersTriggered = false;
-  let liveTeamCount = 50; // default fallback
+  let liveTeamCount = 30; // default fallback
 
   // Pre-fetch team count so it's ready when the section scrolls into view
   fetch('/api/registration-status')

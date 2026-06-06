@@ -39,7 +39,8 @@ function setupHeaders() {
       <th>Round 1 Total (0-100)</th>
     `;
     document.querySelector('.judge-title p').textContent = 'Evaluation Phase: Round 1 (Innovation & Implementation)';
-    document.querySelector('.judge-title p[style*="Total Score"]').textContent = 'Round 1 Score = Innovation + Implementation';
+    const formulaEl = document.getElementById('total-score-formula');
+    if (formulaEl) formulaEl.textContent = 'Round 1 Score = Innovation + Implementation';
   } else {
     headerRow.innerHTML = `
       <th style="width: 80px;">Rank</th>
@@ -53,7 +54,8 @@ function setupHeaders() {
 
     `;
     document.querySelector('.judge-title p').textContent = 'Evaluation Phase: Round 2 (Feasibility & Impact)';
-    document.querySelector('.judge-title p[style*="Total Score"]').textContent = 'Final Score = Round 1 Score + Round 2 Score';
+    const formulaEl = document.getElementById('total-score-formula');
+    if (formulaEl) formulaEl.textContent = 'Final Score = Round 1 Score + Round 2 Score';
   }
 
   // Display judge info

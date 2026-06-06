@@ -1,4 +1,6 @@
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import cv2
 import numpy as np
 from flask import Flask, request, jsonify
@@ -109,6 +111,17 @@ def health():
         'status': 'ok',
         'model_loaded': model is not None,
         'demo_mode': DEMO_MODE
+    })
+
+
+@app.route('/', methods=['GET'])
+def index():
+    return jsonify({
+        'service': 'Flask Hibiscus Service',
+        'status': 'running',
+        'model_loaded': model is not None,
+        'demo_mode': DEMO_MODE,
+        'message': 'Use /predict to POST images. Place hibiscus_classifier.h5 in flask_app/model/ for real scoring.'
     })
 
 
