@@ -36,7 +36,7 @@ console.log(`[SERVER] Spawning Flask service...`);
 
 const pythonProcess = spawn(pythonCmd, [flaskAppPath], {
   cwd: flaskAppDir,
-  stdio: 'ignore',
+  stdio: 'inherit',
   shell: false,
   env: Object.assign({}, process.env, {
   PYTHONUNBUFFERED: '1',
@@ -150,7 +150,7 @@ io.on('connection', (socket) => {
 });
 
 // ===== START SERVER =====
-const PORT = process.env.NODE_PORT || 3001; // Use env variable to avoid conflicts
+const PORT = process.env.PORT || 3001; // Use env variable to avoid conflicts
 
 // Set HTTP-level timeouts to prevent slow-client connection pile-up
 server.timeout = 120000;         // 2 min max for any request
