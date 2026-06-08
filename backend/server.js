@@ -61,6 +61,10 @@ process.on('exit', () => {
 });
 
 const app = express();
+app.get('/health', (req, res) => {
+  console.log('HEALTH ROUTE HIT');
+  res.send('OK');
+});
 const server = http.createServer(app);
 
 // ===== SOCKET.IO TUNING FOR CONCURRENT USERS =====
