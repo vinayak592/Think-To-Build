@@ -123,6 +123,10 @@ app.use((err, req, res, next) => {
 });
 
 // 404 fallback
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
@@ -159,7 +163,7 @@ server.headersTimeout = 66000;   // Must be > keepAliveTimeout
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[SERVER] Running on http://localhost:${PORT}`);
-
+  console.log("PORT ENV =", process.env.PORT);
   // -------------------
   // Automatic Event Start
   // -------------------
