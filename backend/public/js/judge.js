@@ -109,43 +109,41 @@ function renderLeaderboard() {
   leaderboardBody.innerHTML = '';
   
   // Show all teams regardless of disqualification or qualification
-  let qualifiedTeams = [];
+  // Use the order returned by the API as the base list
+  let qualifiedTeams = teamsData;
+
+  // Separate completed and incomplete entries.
+  // A team is considered complete only when BOTH rubric fields for the current round have non‑zero values.
+  const completed = [];
+  const incomplete = [];
+
   if (judgeRound === 1) {
-    // Round 1 shows all registered teams
-    qualifiedTeams = teamsData;
+    qualifiedTeams.forEach(team => {
+      const hasInnovation = typeof team.round1_breakdown?.innovation === 'number' && team.round1_breakdown.innovation > 0;
+      const hasImplementation = typeof team.round1_breakdown?.implementation === 'number' && team.round1_breakdown.implementation > 0;
+      if (hasInnovation && hasImplementation) {
+        completed.push(team);
+      } else {
+        incomplete.push(team);
+      }
+    });
+    // Sort only the completed teams by total round‑1 score (descending)
+    completed.sort((a, b) => (b.round1_score || 0) - (a.round1_score || 0));
   } else {
     // Round 2 also shows all registered teams
     qualifiedTeams = teamsData;
   }
 
-  // Sort by appropriate score descending, but only for teams with complete marks.
-  if (judgeRound === 1) {
-    const complete = [];
-    const incomplete = [];
-    qualifiedTeams.forEach(team => {
-      const hasInnovation = team.round1_breakdown && ('innovation' in team.round1_breakdown);
-      const hasImplementation = team.round1_breakdown && ('implementation' in team.round1_breakdown);
-      if (hasInnovation && hasImplementation) complete.push(team);
-      else incomplete.push(team);
-    });
-    complete.sort((a, b) => (b.round1_score || 0) - (a.round1_score || 0));
-    qualifiedTeams = [...complete, ...incomplete];
-  } else {
-    const complete = [];
-    const incomplete = [];
-    qualifiedTeams.forEach(team => {
-      const hasCreativity = team.round2_breakdown && ('creativity' in team.round2_breakdown);
-      const hasAccuracy = team.round2_breakdown && ('accuracy' in team.round2_breakdown);
-      if (hasCreativity && hasAccuracy) complete.push(team);
-      else incomplete.push(team);
-    });
-    complete.sort((a, b) => {
-      const totalA = (a.round1_score || 0) + (a.round2_score || 0);
-      const totalB = (b.round1_score || 0) + (b.round2_score || 0);
-      return totalB - totalA;
-    });
-    qualifiedTeams = [...complete, ...incomplete];
-  }
+  // Sort by appropriate score descending
+  qualifiedTeams.sort((a, b) => {
+    if (judgeRound === 1) {
+      return (b.round1_score || 0) - (a.round1_score || 0);
+    } else {
+      const finalA = (a.round1_score || 0) + (a.round2_score || 0);
+      const finalB = (b.round1_score || 0) + (b.round2_score || 0);
+      return finalB - finalA;
+    }
+  });
 
   qualifiedTeams.forEach((team, index) => {
     const tr = document.createElement('tr');
