@@ -8,7 +8,7 @@ COPY . .
 
 RUN npm install
 
-RUN pip3 install --no-cache-dir -r flask_app/requirements.txt
+RUN pip3 install --break-system-packages --no-cache-dir -r flask_app/requirements.txt
 
 EXPOSE 4000
 
