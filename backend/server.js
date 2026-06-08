@@ -65,6 +65,12 @@ app.get('/health', (req, res) => {
   console.log('HEALTH ROUTE HIT');
   res.send('OK');
 });
+
+app.get('/test', (req, res) => {
+  console.log('TEST ROUTE HIT');
+  res.send('Server is alive');
+});
+
 const server = http.createServer(app);
 
 // ===== SOCKET.IO TUNING FOR CONCURRENT USERS =====

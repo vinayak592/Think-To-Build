@@ -10,6 +10,6 @@ RUN npm install
 
 RUN pip3 install --break-system-packages --no-cache-dir -r flask_app/requirements.txt
 
-EXPOSE 4000
+EXPOSE 8080
 
 CMD ["npm", "start"]
