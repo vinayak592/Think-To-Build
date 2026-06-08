@@ -26,8 +26,9 @@ process.on('unhandledRejection', (reason) => {
 const { spawn } = require('child_process');
 const flaskAppDir  = path.resolve(__dirname, '../flask_app');
 const flaskAppPath = path.join(flaskAppDir, 'app.py');
-const pythonVenvPath = path.join(flaskAppDir, 'venv/Scripts/python.exe');
-const pythonCmd = fs.existsSync(pythonVenvPath) ? pythonVenvPath : 'python';
+const pythonCmd = process.platform === 'win32'
+  ? path.join(flaskAppDir, 'venv/Scripts/python.exe')
+  : 'python3';
 
 console.log(`[SERVER] Flask app dir : ${flaskAppDir}`);
 console.log(`[SERVER] Python binary : ${pythonCmd}`);
