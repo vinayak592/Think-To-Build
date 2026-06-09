@@ -6,10 +6,10 @@ WORKDIR /app
 
 COPY . .
 
-RUN npm install
-
+RUN npm install --prefix backend
 RUN pip3 install --break-system-packages --no-cache-dir -r flask_app/requirements.txt
 
+ENV PORT=8080
 EXPOSE 8080
 
 CMD ["npm", "start"]

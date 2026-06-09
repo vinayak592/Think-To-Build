@@ -123,6 +123,12 @@ app.get(['/judge-dashboard', '/api/admin'], (req, res) =>
   res.sendFile(path.join(__dirname, 'public/judge.html'))
 );
 
+// Rule Book
+const ruleBookPath = path.join(__dirname, '../R-BOOK/R-BOOK.pdf');
+app.get('/R_BOOK', (req, res) => res.sendFile(ruleBookPath));
+app.get('/R_BOOK/R_BOOK', (req, res) => res.sendFile(ruleBookPath));
+app.get('/R_BOOK/R-BOOK.pdf', (req, res) => res.sendFile(ruleBookPath));
+
 // ===== GLOBAL ERROR HANDLER =====
 // Catches any error thrown from route handlers
 // eslint-disable-next-line no-unused-vars
